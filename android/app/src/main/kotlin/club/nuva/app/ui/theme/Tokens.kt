@@ -94,32 +94,54 @@ data class NuvaPalette(
     val bubbleInText: Color,
     /** Soft wash behind hero areas only. Never behind body text. */
     val glow: Color,
+
+    // -- added in 4.0 -------------------------------------------------------
+    // All defaulted, so any existing NuvaPalette(...) call site still compiles.
+
+    /** Top of the outgoing-bubble gradient. Equals [bubbleOut] for a flat look. */
+    val bubbleOutTop: Color = bubbleOut,
+    /** Bottom of the outgoing-bubble gradient. */
+    val bubbleOutBottom: Color = bubbleOut,
+    /** Floating layers: context menus, reaction bars, sheets. Above [surface]. */
+    val surfaceRaised: Color = surfaceAlt,
+    /** Full-screen dim behind a focused message or a modal. */
+    val scrim: Color = Color(0x99000000),
+    /** Played portion of a voice waveform. */
+    val waveActive: Color = accent,
+    /** Unplayed portion of a voice waveform. */
+    val waveIdle: Color = textFaint,
 )
 
 internal val DarkPalette = NuvaPalette(
     isDark = true,
-    canvas = Color(0xFF0C0F12),
-    surface = Color(0xFF14181C),
-    surfaceAlt = Color(0xFF1C2126),
-    surfaceSunken = Color(0xFF090B0D),
-    hairline = Color(0xFF232A30),
-    text = Color(0xFFECF1F4),
-    textMuted = Color(0xFF8D9AA4),
-    textFaint = Color(0xFF5D6A73),
-    accent = Color(0xFF12B39A),
-    accentSoft = Color(0xFF56D9C2),
-    accentWash = Color(0x2412B39A),
-    accentInk = Color(0xFF04140F),
-    mint = Color(0xFF4ADE9B),
-    amber = Color(0xFFE8A93C),
-    iris = Color(0xFF7C7CF0),
-    danger = Color(0xFFE4574C),
-    coral = Color(0xFFE4574C),
-    bubbleOut = Color(0xFF12B39A),
-    bubbleOutText = Color(0xFF04140F),
-    bubbleIn = Color(0xFF1C2126),
-    bubbleInText = Color(0xFFECF1F4),
-    glow = Color(0x3812B39A),
+    canvas = Color(0xFF070B14),
+    surface = Color(0xFF101827),
+    surfaceAlt = Color(0xFF1A2436),
+    surfaceSunken = Color(0xFF04070E),
+    hairline = Color(0xFF232F45),
+    text = Color(0xFFEDF2FA),
+    textMuted = Color(0xFF8797B0),
+    textFaint = Color(0xFF5B6981),
+    accent = Color(0xFF6C7CFF),
+    accentSoft = Color(0xFF9AA6FF),
+    accentWash = Color(0x266C7CFF),
+    accentInk = Color(0xFFFFFFFF),
+    mint = Color(0xFF3DD6A0),
+    amber = Color(0xFFF2B23E),
+    iris = Color(0xFFA56CFF),
+    danger = Color(0xFFFF5C6C),
+    coral = Color(0xFFFF5C6C),
+    bubbleOut = Color(0xFF6E5BF0),
+    bubbleOutText = Color(0xFFFFFFFF),
+    bubbleIn = Color(0xFF1A2436),
+    bubbleInText = Color(0xFFEDF2FA),
+    glow = Color(0x386E5BF0),
+    bubbleOutTop = Color(0xFF7B63F5),
+    bubbleOutBottom = Color(0xFF5B54E6),
+    surfaceRaised = Color(0xFF212C42),
+    scrim = Color(0xB3040710),
+    waveActive = Color(0xFFFFFFFF),
+    waveIdle = Color(0x66FFFFFF),
 )
 
 /**
@@ -129,28 +151,34 @@ internal val DarkPalette = NuvaPalette(
  */
 internal val LightPalette = NuvaPalette(
     isDark = false,
-    canvas = Color(0xFFF6F4F1),
+    canvas = Color(0xFFF4F6FB),
     surface = Color(0xFFFFFFFF),
-    surfaceAlt = Color(0xFFEDEAE5),
-    surfaceSunken = Color(0xFFE7E3DC),
-    hairline = Color(0xFFE0DCD5),
-    text = Color(0xFF101418),
-    textMuted = Color(0xFF5C6770),
-    textFaint = Color(0xFF8A949C),
-    accent = Color(0xFF0B8C79),
-    accentSoft = Color(0xFF0E9C86),
-    accentWash = Color(0x1F0B8C79),
+    surfaceAlt = Color(0xFFE9EDF6),
+    surfaceSunken = Color(0xFFE1E7F2),
+    hairline = Color(0xFFDCE3EF),
+    text = Color(0xFF0D1220),
+    textMuted = Color(0xFF57637A),
+    textFaint = Color(0xFF8794A8),
+    accent = Color(0xFF4B57D6),
+    accentSoft = Color(0xFF5A67E8),
+    accentWash = Color(0x1F4B57D6),
     accentInk = Color(0xFFFFFFFF),
-    mint = Color(0xFF12A06B),
-    amber = Color(0xFFA9741A),
-    iris = Color(0xFF5551D6),
-    danger = Color(0xFFC93A30),
-    coral = Color(0xFFC93A30),
-    bubbleOut = Color(0xFF0B8C79),
+    mint = Color(0xFF0F9D6B),
+    amber = Color(0xFFB07714),
+    iris = Color(0xFF7B3FE4),
+    danger = Color(0xFFD33B49),
+    coral = Color(0xFFD33B49),
+    bubbleOut = Color(0xFF5A5FE0),
     bubbleOutText = Color(0xFFFFFFFF),
     bubbleIn = Color(0xFFFFFFFF),
-    bubbleInText = Color(0xFF101418),
-    glow = Color(0x1F0B8C79),
+    bubbleInText = Color(0xFF0D1220),
+    glow = Color(0x1F5A5FE0),
+    bubbleOutTop = Color(0xFF6A6FEA),
+    bubbleOutBottom = Color(0xFF4A50D2),
+    surfaceRaised = Color(0xFFFFFFFF),
+    scrim = Color(0x66101828),
+    waveActive = Color(0xFFFFFFFF),
+    waveIdle = Color(0x73FFFFFF),
 )
 
 internal fun darkScheme(p: NuvaPalette) = darkColorScheme(
@@ -365,4 +393,24 @@ object NuvaMotion {
 
     const val SPRING_STIFFNESS = 400f
     const val SPRING_DAMPING = 0.85f
+
+    // -- added in 4.0 -------------------------------------------------------
+
+    /** A bubble landing in the list. Long enough to read, short enough to feel instant. */
+    const val BUBBLE_IN = 220
+
+    /** Reaction pop, check-mark flip, tiny state changes. */
+    const val MICRO = 130
+
+    /** Context menu / reaction bar opening over a dimmed chat. */
+    const val OVERLAY = 200
+
+    /** One waveform bar redraw while recording. Below this it looks like noise. */
+    const val WAVE_TICK = 60
+
+    /** Hold this long before a press becomes a voice recording. */
+    const val RECORD_HOLD_MS = 220L
+
+    /** Drag this far left to cancel a recording. */
+    const val CANCEL_SLIDE_DP = 96f
 }
