@@ -49,7 +49,7 @@ class HomeViewModel(
             }
         }
         viewModelScope.launch {
-            realtime.incoming.collect { envelope ->
+            realtime.events.collect { envelope ->
                 appendLog("<- ${envelope.type} ${envelope.payload?.toString()?.take(120).orEmpty()}")
             }
         }
@@ -81,7 +81,7 @@ class HomeViewModel(
     /** Round-trips a frame through the server to prove the socket is alive. */
     fun sendEcho() {
         val stamp = System.currentTimeMillis()
-        realtime.send(type = "echo", payload = JsonPrimitive("hello-$stamp"), id = stamp.toString())
+        realtime.enqueue(type = "echo", payload = JsonPrimitive("hello-$stamp"), id = stamp.toString())
         appendLog("-> echo hello-$stamp")
     }
 

@@ -29,3 +29,13 @@
 # Keep crash-report line numbers readable.
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Ktor 2.x references JVM-only APIs that simply do not exist on Android.
+# Without these, R8 aborts the RELEASE build with "Missing class" even though
+# the debug build is perfectly fine. Suppressing warnings only - nothing is kept
+# that would grow the APK.
+-dontwarn java.lang.management.**
+-dontwarn javax.naming.**
+-dontwarn io.ktor.util.debug.**
+-dontwarn kotlin.reflect.jvm.internal.**
+-dontwarn com.google.errorprone.annotations.**

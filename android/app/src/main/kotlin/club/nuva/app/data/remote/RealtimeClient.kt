@@ -2,6 +2,7 @@ package club.nuva.app.data.remote
 
 import android.util.Log
 import club.nuva.app.data.local.SessionStore
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.header
 import io.ktor.websocket.Frame
@@ -62,8 +63,10 @@ class RealtimeClient(
     private val _state = MutableStateFlow(State.Idle)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    private val _incoming = MutableSharedFlow<Envelope>(replay = 0, extraBufferCapacity = 64)
-    val incoming: SharedFlow<Envelope> = _incoming.asSharedFlow()
+    // Named `events`, NOT `incoming`: inside webSocket { } the session already
+    // has a member called `incoming`, and the outer property used to shadow it.
+    private val _events = MutableSharedFlow<Envelope>(replay = 0, extraBufferCapacity = 64)
+    val events: SharedFlow<Envelope> = _events.asSharedFlow()
 
     private val outgoing = Channel<String>(capacity = 64)
     private var connectionJob: Job? = null
@@ -79,8 +82,14 @@ class RealtimeClient(
         _state.value = State.Idle
     }
 
-    /** Queues a frame. Safe to call while offline: it is sent on reconnect. */
-    fun send(type: String, payload: JsonElement? = null, id: String? = null) {
+    /**
+     * Queues a frame. Safe to call while offline: it is sent on reconnect.
+     *
+     * Named `enqueue`, NOT `send`: the WebSocket session exposes its own
+     * `send(String)`, and two overloads named `send` in overlapping scopes is
+     * how you silently post a frame into the wrong sink.
+     */
+    fun enqueue(type: String, payload: JsonElement? = null, id: String? = null) {
         val frame = json.encodeToString(Envelope.serializer(), Envelope(type, id, payload))
         val result = outgoing.trySend(frame)
         if (result.isFailure) {
@@ -110,26 +119,31 @@ class RealtimeClient(
                     urlString = wsUrl,
                     request = { header("Authorization", "Bearer $token") },
                 ) {
+                    // Bound explicitly: every `session.x` below is provably the
+                    // socket and never an outer-class member with the same name.
+                    val session: DefaultClientWebSocketSession = this
                     attempt = 0
                     _state.value = State.Online
                     Log.i(TAG, "realtime channel open")
 
                     // Writer pump for this connection.
                     val writer = launch {
-                        for (frame in outgoing) {
-                            send(frame)
+                        for (text in outgoing) {
+                            session.send(text)
                         }
                     }
                     // Heartbeat so the server never times us out at 90s.
                     val heartbeat = launch {
                         while (isActive) {
                             delay(HEARTBEAT_MS)
-                            send(json.encodeToString(Envelope.serializer(), Envelope("ping")))
+                            session.send(
+                                json.encodeToString(Envelope.serializer(), Envelope("ping")),
+                            )
                         }
                     }
 
                     try {
-                        for (frame in incoming) {
+                        for (frame in session.incoming) {
                             if (frame !is Frame.Text) continue
                             val text = frame.readText()
                             val envelope = runCatching {
@@ -139,7 +153,7 @@ class RealtimeClient(
                                 Log.w(TAG, "unparsable frame: ${text.take(120)}")
                                 continue
                             }
-                            _incoming.emit(envelope)
+                            _events.emit(envelope)
                         }
                     } finally {
                         heartbeat.cancel()

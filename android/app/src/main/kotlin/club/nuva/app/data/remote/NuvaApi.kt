@@ -122,7 +122,9 @@ class NuvaApi(
                 }
                 sendWithoutRequest { request ->
                     // Auth endpoints must not carry a stale token.
-                    !request.url.encodedPath.contains("/auth/")
+                    // `buildString()` is a stable member of URLBuilder in every
+                    // Ktor 2.x/3.x release; `encodedPath` is not.
+                    !request.url.buildString().contains("/$API_PREFIX/auth/")
                 }
             }
         }
@@ -131,7 +133,12 @@ class NuvaApi(
             install(Logging) {
                 level = LogLevel.HEADERS
                 logger = object : Logger {
-                    override fun log(message: String) = Log.d("NuvaHttp", message)
+                    // Block body on purpose: Log.d returns Int, and an
+                    // expression body would make this override return Int
+                    // instead of Unit.
+                    override fun log(message: String) {
+                        Log.d("NuvaHttp", message)
+                    }
                 }
             }
         }
