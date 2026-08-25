@@ -28,6 +28,7 @@ import club.nuva.app.ui.auth.AuthViewModel
 import club.nuva.app.ui.server.ServerScreen
 import club.nuva.app.ui.server.ServerViewModel
 import club.nuva.app.ui.shell.NuvaShell
+import club.nuva.app.ui.onboarding.WelcomeScreen
 import club.nuva.app.ui.theme.NuvaTheme
 import club.nuva.app.util.ServerUrl
 
@@ -48,7 +49,12 @@ fun NuvaApp() {
     // Set only when the user asks to switch servers while one is configured.
     var switchingServer by rememberSaveable { mutableStateOf(false) }
 
+    val prefs by ServiceLocator.uiPrefs.state.collectAsStateWithLifecycle()
+
     val destination = when {
+        // New installs only: someone already signed in must never be shown an
+        // intro again after an app update.
+        !prefs.welcomeSeen && session == null -> Destination.Welcome
         server == null || switchingServer -> Destination.Server
         session != null -> Destination.Home
         else -> Destination.Auth
@@ -64,6 +70,10 @@ fun NuvaApp() {
             label = "root",
         ) { current ->
             when (current) {
+                Destination.Welcome -> {
+                    WelcomeScreen(onDone = { ServiceLocator.uiPrefs.setWelcomeSeen() })
+                }
+
                 Destination.Server -> {
                     val serverViewModel: ServerViewModel = viewModel(
                         // Keyed by the server being replaced, so reopening the
@@ -111,7 +121,7 @@ fun NuvaApp() {
     }
 }
 
-private enum class Destination { Server, Auth, Home }
+private enum class Destination { Welcome, Server, Auth, Home }
 
 /** Always visible on the sign-in screen: you should never wonder who you are trusting. */
 @Composable

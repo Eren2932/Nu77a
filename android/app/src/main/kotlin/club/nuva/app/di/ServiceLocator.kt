@@ -1,6 +1,7 @@
 package club.nuva.app.di
 
 import android.content.Context
+import club.nuva.app.data.local.ChatDatabase
 import club.nuva.app.data.local.ServerStore
 import club.nuva.app.data.local.SessionStore
 import club.nuva.app.data.local.UiPrefs
@@ -47,11 +48,13 @@ object ServiceLocator {
     lateinit var serverRepository: ServerRepository
         private set
 
+    lateinit var chatDatabase: ChatDatabase
+        private set
+
     /**
-     * Sprint-2.5 placeholder. Holds conversations in memory so the UI can be
-     * built, reviewed and shipped as an installable APK before the server side
-     * of chat exists. DELETE together with ui/chat/ChatDraftStore.kt when the
-     * real message store lands.
+     * Conversations and local contacts, persisted in SQLite. No longer a
+     * placeholder: as of 3.1 this survives a restart and invents nothing.
+     * Renamed to `chatStore` in 3.2 with the screen rewrite.
      */
     lateinit var chatDrafts: ChatDraftStore
         private set
@@ -69,7 +72,8 @@ object ServiceLocator {
             authRepository = AuthRepository(api, sessionStore)
             realtime = RealtimeClient(api, sessionStore, applicationScope)
             serverRepository = ServerRepository(serverStore, sessionStore, api, realtime)
-            chatDrafts = ChatDraftStore(applicationScope)
+            chatDatabase = ChatDatabase(context.applicationContext)
+            chatDrafts = ChatDraftStore(chatDatabase, applicationScope)
 
             initialized = true
         }

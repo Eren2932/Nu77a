@@ -25,6 +25,8 @@ class UiPrefs(context: Context) {
         val themeMode: ThemeMode = ThemeMode.System,
         val compactChats: Boolean = false,
         val sendOnEnter: Boolean = false,
+        /** False until the welcome flow has been completed once. */
+        val welcomeSeen: Boolean = false,
     )
 
     private val prefs = context.getSharedPreferences("nuva_ui", Context.MODE_PRIVATE)
@@ -36,6 +38,7 @@ class UiPrefs(context: Context) {
             }.getOrDefault(ThemeMode.System),
             compactChats = prefs.getBoolean(KEY_COMPACT, false),
             sendOnEnter = prefs.getBoolean(KEY_SEND_ON_ENTER, false),
+            welcomeSeen = prefs.getBoolean(KEY_WELCOME_SEEN, false),
         ),
     )
     val state: StateFlow<State> = _state.asStateFlow()
@@ -55,9 +58,21 @@ class UiPrefs(context: Context) {
         _state.update { it.copy(sendOnEnter = value) }
     }
 
+    /**
+     * Marked when the user finishes the welcome flow. Written synchronously
+     * with commit(), not apply(): if the process dies right after the user taps
+     * through the last card, showing the whole intro again would be a bug the
+     * user reads as "this app forgot me".
+     */
+    fun setWelcomeSeen() {
+        prefs.edit().putBoolean(KEY_WELCOME_SEEN, true).commit()
+        _state.update { it.copy(welcomeSeen = true) }
+    }
+
     private companion object {
         const val KEY_THEME = "theme_mode"
         const val KEY_COMPACT = "compact_chats"
         const val KEY_SEND_ON_ENTER = "send_on_enter"
+        const val KEY_WELCOME_SEEN = "welcome_seen"
     }
 }
