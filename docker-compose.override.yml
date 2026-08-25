@@ -1,0 +1,26 @@
+# =============================================================================
+#  Nuva - local override. Drop this file NEXT TO docker-compose.yml.
+#
+#  docker compose reads docker-compose.override.yml automatically, so you do
+#  not touch the main file and nothing here ever reaches the VPS.
+#
+#  WHY THIS EXISTS
+#  The `server` service in docker-compose.yml had no `ports:` section, so its
+#  8080 was reachable only from inside the Docker network. That is exactly why:
+#    - http://192.168.0.6:8080   -> No connection   (nothing listening on the PC)
+#    - Pinggy / localhost.run    -> "GET Reset"     (TCP RST = port closed)
+#    - Cloudflare tunnel         -> reached the server fine (same Docker network)
+#
+#  After adding this file:
+#      docker compose up -d
+#      docker compose ps        # must show 0.0.0.0:8080->8080/tcp
+#      curl http://localhost:8080/v1/meta
+# =============================================================================
+
+services:
+  server:
+    ports:
+      # 0.0.0.0 = every interface on the PC: loopback (for SSH tunnels) AND
+      # the Wi-Fi address (for the phone). Both paths were broken by the same
+      # missing line.
+      - "0.0.0.0:8080:8080"

@@ -6,6 +6,27 @@ name: Android
 # in git is both a supply-chain risk and the classic source of
 # "wrapper not found" failures. CI installs a pinned Gradle instead, and so do
 # you locally (see docs/BUILD.md).
+#
+# ---------------------------------------------------------------------------
+# SIGNING SECRETS — read this before touching anything
+# ---------------------------------------------------------------------------
+# Four repository secrets are required for the release job. BOTH naming schemes
+# below are accepted, so whichever one you already created in
+# Settings -> Secrets and variables -> Actions -> Repository secrets works:
+#
+#   canonical name             | short alias
+#   ---------------------------|-------------
+#   NUVA_KEYSTORE_BASE64       | KS
+#   NUVA_KEYSTORE_PASSWORD     | KS_PASS
+#   NUVA_KEY_ALIAS             | KEY_ALIAS
+#   NUVA_KEY_PASSWORD          | KEY_PASS
+#
+# Failure history (see FIXES-0.1.1.md): the previous version of this file only
+# read the canonical names, while the four secrets had been created under the
+# short aliases -- which are the shell variable names used inside the verify
+# step, not secret names. The job failed with "Missing repository secret for KS"
+# even though all four secrets existed. Accepting both names removes that class
+# of failure permanently.
 
 on:
   push:
@@ -53,6 +74,15 @@ jobs:
         working-directory: android
         run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
 
+      - name: Upload test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuva-unit-test-report
+          path: android/app/build/reports/tests/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Assemble debug APK
         working-directory: android
         run: gradle :app:assembleDebug --no-daemon --stacktrace
@@ -73,27 +103,56 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v') || inputs.build_release
     permissions:
       contents: write
+
+    # Resolved ONCE for the whole job: every step below reads these, so a name
+    # can never drift between the verify step and the build step again.
+    env:
+      NUVA_KEYSTORE_BASE64: ${{ secrets.NUVA_KEYSTORE_BASE64 || secrets.KS }}
+      NUVA_KEYSTORE_PASSWORD: ${{ secrets.NUVA_KEYSTORE_PASSWORD || secrets.KS_PASS }}
+      NUVA_KEY_ALIAS: ${{ secrets.NUVA_KEY_ALIAS || secrets.KEY_ALIAS }}
+      NUVA_KEY_PASSWORD: ${{ secrets.NUVA_KEY_PASSWORD || secrets.KEY_PASS }}
+
     steps:
       - uses: actions/checkout@v5
 
       - name: Verify signing secrets are present
-        env:
-          KS: ${{ secrets.NUVA_KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.NUVA_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.NUVA_KEY_ALIAS }}
-          KEY_PASS: ${{ secrets.NUVA_KEY_PASSWORD }}
         run: |
           missing=0
-          for name in KS KS_PASS KEY_ALIAS KEY_PASS; do
-            if [ -z "${!name}" ]; then
-              echo "::error::Missing repository secret for $name"
+          check() {
+            # $1 = canonical secret name, $2 = short alias, $3 = value
+            if [ -z "$3" ]; then
+              echo "::error::No value for the keystore secret. Create it as '$1' (or as '$2')."
               missing=1
+            else
+              printf '  %-24s OK (%d characters)\n' "$1" "${#3}"
             fi
-          done
+          }
+
+          echo "Checking the four signing secrets:"
+          check NUVA_KEYSTORE_BASE64   KS        "$NUVA_KEYSTORE_BASE64"
+          check NUVA_KEYSTORE_PASSWORD KS_PASS   "$NUVA_KEYSTORE_PASSWORD"
+          check NUVA_KEY_ALIAS         KEY_ALIAS "$NUVA_KEY_ALIAS"
+          check NUVA_KEY_PASSWORD      KEY_PASS  "$NUVA_KEY_PASSWORD"
+
           if [ "$missing" = "1" ]; then
-            echo "Run scripts/make-keystore.sh and add the four secrets it prints."
+            cat <<'EOF'
+
+          One or more signing secrets are empty as seen by this workflow.
+
+          Checklist, in the order that actually finds the problem:
+            1. Settings -> Secrets and variables -> Actions -> tab
+               "Secrets" -> section "Repository secrets".
+               Environment secrets and Dependabot secrets are NOT visible here.
+            2. Names are case sensitive and must be exactly one of the two
+               accepted spellings printed above. No spaces, no quotes.
+            3. A fork's pull request never receives repository secrets. Push a
+               tag on this repository instead.
+            4. Generate the keystore and the four values with
+               scripts/make-keystore.sh from the repo root.
+          EOF
             exit 1
           fi
+          echo "All four signing secrets are visible to this job."
 
       - name: Set up JDK ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v5
@@ -107,19 +166,41 @@ jobs:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
       - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.NUVA_KEYSTORE_BASE64 }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/nuva-release.jks"
-          # A truncated secret produces a file that keytool cannot read; catch it here.
-          test -s "${{ runner.temp }}/nuva-release.jks"
+          KS_PATH="${{ runner.temp }}/nuva-release.jks"
+          # Strip every whitespace character first: a secret pasted from a
+          # terminal often carries newlines, and `base64 -d` rejects them.
+          printf '%s' "$NUVA_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$KS_PATH"
+          if [ ! -s "$KS_PATH" ]; then
+            echo "::error::The decoded keystore is empty. NUVA_KEYSTORE_BASE64 (or KS) is truncated or is not base64."
+            exit 1
+          fi
+          # Prove the file is a real keystore that opens with this password,
+          # before Gradle spends ten minutes compiling.
+          if ! keytool -list -keystore "$KS_PATH" \
+                 -storepass "$NUVA_KEYSTORE_PASSWORD" > /tmp/ks-list.txt 2>&1; then
+            echo "::error::keytool could not open the keystore. The store password is wrong, or the base64 blob is not the keystore."
+            exit 1
+          fi
+          if ! grep -qi "^${NUVA_KEY_ALIAS}," /tmp/ks-list.txt; then
+            echo "::error::Alias '${NUVA_KEY_ALIAS}' is not in this keystore. Aliases present:"
+            grep -i 'PrivateKeyEntry' /tmp/ks-list.txt | cut -d, -f1 | sed 's/^/  /'
+            exit 1
+          fi
+          echo "Keystore decoded and opened, alias found."
+          echo "NUVA_KEYSTORE_PATH=$KS_PATH" >> "$GITHUB_ENV"
 
       - name: Derive version from the tag
         id: version
         run: |
           RAW="${GITHUB_REF_NAME}"
-          NAME="${RAW#v}"
-          if [ -z "$NAME" ] || [ "$RAW" = "$NAME" ] && [ "${{ github.event_name }}" = "push" ]; then
+          case "$RAW" in
+            v*) NAME="${RAW#v}" ;;
+            *)  NAME="" ;;
+          esac
+          if [ -z "$NAME" ]; then
+            # Manual run on a branch: still produce something installable and
+            # obviously not a release.
             NAME="0.0.0-${GITHUB_SHA::7}"
           fi
           # versionCode must never decrease: the run number is monotonic.
@@ -130,11 +211,6 @@ jobs:
 
       - name: Assemble signed release APK
         working-directory: android
-        env:
-          NUVA_KEYSTORE_PATH: ${{ runner.temp }}/nuva-release.jks
-          NUVA_KEYSTORE_PASSWORD: ${{ secrets.NUVA_KEYSTORE_PASSWORD }}
-          NUVA_KEY_ALIAS: ${{ secrets.NUVA_KEY_ALIAS }}
-          NUVA_KEY_PASSWORD: ${{ secrets.NUVA_KEY_PASSWORD }}
         run: |
           gradle :app:assembleRelease --no-daemon --stacktrace \
             -PnuvaVersionName="${{ steps.version.outputs.name }}" \
@@ -144,11 +220,21 @@ jobs:
       - name: Verify the APK is really signed
         run: |
           APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::error::No release APK was produced."
+            exit 1
+          fi
           echo "APK: $APK"
-          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
-          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
-          # Record the fingerprint in the log: it must be identical in every release.
-          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | grep -i 'SHA-256 digest' || true
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          BUILD_TOOLS=$(ls -d "$SDK_ROOT"/build-tools/* 2>/dev/null | sort -V | tail -n1)
+          if [ -z "$BUILD_TOOLS" ] || [ ! -x "$BUILD_TOOLS/apksigner" ]; then
+            echo "::error::apksigner not found under $SDK_ROOT/build-tools."
+            exit 1
+          fi
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | tee /tmp/certs.txt
+          # The signer fingerprint must be identical in every release forever:
+          # a different one means users cannot update in place.
+          grep -i 'SHA-256 digest' /tmp/certs.txt || true
 
       - name: Rename APK
         id: rename
