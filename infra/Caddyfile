@@ -1,0 +1,41 @@
+# Caddy terminates TLS and proxies everything to the Go server.
+# Certificates are obtained and renewed automatically: no cron, no certbot.
+
+{
+	email {$NUVA_ACME_EMAIL}
+	admin off
+}
+
+{$NUVA_DOMAIN} {
+	encode zstd gzip
+
+	# WebSocket upgrades pass through untouched; no read timeout may apply to
+	# them or long-lived connections get cut every minute.
+	@websockets {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	reverse_proxy @websockets server:8080
+
+	reverse_proxy server:8080 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}
+
+# Plain HTTP is only used by Let's Encrypt and for the redirect above; Caddy
+# handles both automatically.

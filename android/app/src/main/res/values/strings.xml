@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nuva</string>
+    <string name="tagline">Your words. Your rules.</string>
+
+    <string name="tab_sign_in">Sign in</string>
+    <string name="tab_create_account">Create account</string>
+
+    <string name="field_username">Username</string>
+    <string name="field_display_name">Display name</string>
+    <string name="field_password">Password</string>
+
+    <string name="action_sign_in">Sign in</string>
+    <string name="action_create_account">Create account</string>
+    <string name="action_sign_out">Sign out</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_saved_it">I saved it</string>
+
+    <string name="recovery_title">Save your recovery code</string>
+    <string name="recovery_body">This code is the only way back into your account if you forget your password or lose your phone. We cannot recover it for you. Write it down now.</string>
+
+    <string name="status_connecting">Connecting…</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+    <string name="status_reconnecting">Reconnecting…</string>
+</resources>

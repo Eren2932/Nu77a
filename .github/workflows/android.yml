@@ -1,0 +1,183 @@
+name: Android
+
+# Debug APK on every push, signed release APK on every version tag.
+#
+# There is deliberately NO Gradle wrapper jar in this repository: a binary blob
+# in git is both a supply-chain risk and the classic source of
+# "wrapper not found" failures. CI installs a pinned Gradle instead, and so do
+# you locally (see docs/BUILD.md).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+    inputs:
+      build_release:
+        description: 'Also build a signed release APK'
+        type: boolean
+        default: false
+
+env:
+  GRADLE_VERSION: '8.10.2'
+  JAVA_VERSION: '17'
+
+jobs:
+  debug:
+    name: Debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle ${{ env.GRADLE_VERSION }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Unit tests
+        working-directory: android
+        run: gradle :app:testDebugUnitTest --no-daemon --stacktrace
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuva-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Signed release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Only for tags or a manual run with the flag set: never on ordinary pushes.
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.build_release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify signing secrets are present
+        env:
+          KS: ${{ secrets.NUVA_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.NUVA_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NUVA_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.NUVA_KEY_PASSWORD }}
+        run: |
+          missing=0
+          for name in KS KS_PASS KEY_ALIAS KEY_PASS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing repository secret for $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" = "1" ]; then
+            echo "Run scripts/make-keystore.sh and add the four secrets it prints."
+            exit 1
+          fi
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Set up Gradle ${{ env.GRADLE_VERSION }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.NUVA_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "${{ runner.temp }}/nuva-release.jks"
+          # A truncated secret produces a file that keytool cannot read; catch it here.
+          test -s "${{ runner.temp }}/nuva-release.jks"
+
+      - name: Derive version from the tag
+        id: version
+        run: |
+          RAW="${GITHUB_REF_NAME}"
+          NAME="${RAW#v}"
+          if [ -z "$NAME" ] || [ "$RAW" = "$NAME" ] && [ "${{ github.event_name }}" = "push" ]; then
+            NAME="0.0.0-${GITHUB_SHA::7}"
+          fi
+          # versionCode must never decrease: the run number is monotonic.
+          CODE="${GITHUB_RUN_NUMBER}"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Building Nuva $NAME (versionCode $CODE)"
+
+      - name: Assemble signed release APK
+        working-directory: android
+        env:
+          NUVA_KEYSTORE_PATH: ${{ runner.temp }}/nuva-release.jks
+          NUVA_KEYSTORE_PASSWORD: ${{ secrets.NUVA_KEYSTORE_PASSWORD }}
+          NUVA_KEY_ALIAS: ${{ secrets.NUVA_KEY_ALIAS }}
+          NUVA_KEY_PASSWORD: ${{ secrets.NUVA_KEY_PASSWORD }}
+        run: |
+          gradle :app:assembleRelease --no-daemon --stacktrace \
+            -PnuvaVersionName="${{ steps.version.outputs.name }}" \
+            -PnuvaVersionCode="${{ steps.version.outputs.code }}" \
+            -PnuvaApiBaseUrl="${{ vars.NUVA_API_BASE_URL || 'https://api.nuva.club' }}"
+
+      - name: Verify the APK is really signed
+        run: |
+          APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n1)
+          echo "APK: $APK"
+          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK"
+          # Record the fingerprint in the log: it must be identical in every release.
+          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | grep -i 'SHA-256 digest' || true
+
+      - name: Rename APK
+        id: rename
+        run: |
+          SRC=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n1)
+          DEST="nuva-${{ steps.version.outputs.name }}.apk"
+          cp "$SRC" "$DEST"
+          echo "path=$DEST" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuva-release-apk
+          path: ${{ steps.rename.outputs.path }}
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Attach APK to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.rename.outputs.path }}
+          generate_release_notes: true
+          body: |
+            ## Nuva ${{ steps.version.outputs.name }}
+
+            Install the APK below. It is signed with the permanent Nuva release
+            key, so it installs straight over any previous version and keeps
+            your account and local data.
+
+            If Android says the app conflicts with an existing package, you have
+            a debug build installed: uninstall `club.nuva.app.debug` first.

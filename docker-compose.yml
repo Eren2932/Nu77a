@@ -1,0 +1,78 @@
+# Production stack for a single VPS: Postgres + Nuva + Caddy (automatic HTTPS).
+#
+#   cp .env.example .env && ./scripts/gen-secrets.sh
+#   docker compose up -d --build
+#
+# One command, no manual certificate work, no nginx config to forget.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Faster and safe here: the DB never needs to survive an OS crash intact
+      # more than the last second of writes. Remove if you disagree.
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [nuva]
+
+  server:
+    build:
+      context: ./server
+      args:
+        VERSION: ${NUVA_VERSION:-dev}
+        COMMIT: ${NUVA_COMMIT:-local}
+    image: ghcr.io/${GITHUB_REPOSITORY:-nuva/nuva}/server:${NUVA_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NUVA_ENV: ${NUVA_ENV}
+      NUVA_PORT: 8080
+      NUVA_DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      NUVA_JWT_SECRET: ${NUVA_JWT_SECRET}
+      NUVA_ACCESS_TTL: ${NUVA_ACCESS_TTL}
+      NUVA_REFRESH_TTL: ${NUVA_REFRESH_TTL}
+      NUVA_MEDIA_DIR: /data/media
+      NUVA_MAX_UPLOAD_MB: ${NUVA_MAX_UPLOAD_MB}
+      NUVA_ALLOWED_ORIGINS: ${NUVA_ALLOWED_ORIGINS}
+    volumes:
+      - media_data:/data/media
+    networks: [nuva]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [server]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      NUVA_DOMAIN: ${NUVA_DOMAIN}
+      NUVA_ACME_EMAIL: ${NUVA_ACME_EMAIL}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [nuva]
+
+volumes:
+  db_data:
+  media_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  nuva:
+    driver: bridge

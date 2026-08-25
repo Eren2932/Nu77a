@@ -1,0 +1,32 @@
+# --- secrets: never commit these -------------------------------------------
+.env
+*.jks
+*.keystore
+keystore.properties
+android/keystore.properties
+*.p12
+secrets/
+
+# --- android ---------------------------------------------------------------
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.kotlin/
+*.apk
+*.aab
+*.iml
+.idea/
+captures/
+.cxx/
+
+# --- go --------------------------------------------------------------------
+server/nuva-server
+server/bin/
+server/coverage.out
+
+# --- os / editors ----------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*~
