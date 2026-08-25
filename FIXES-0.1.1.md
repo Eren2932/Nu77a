@@ -62,3 +62,38 @@ The `outgoing` channel is shared across reconnects. If the socket dies while the
 writer pump is suspended on a `send`, that single frame is lost. Correct fix is
 per-message acknowledgement from the server, which lands in sprint 2 together
 with the offline queue - not worth a half-measure now.
+
+## 2026-08-25, second CI run - same class of bug, mirrored (my miss)
+
+`RealtimeClient.kt:131:38 For-loop range must have an 'iterator()' method`
+
+I fixed `incoming` and `send` and did not check `outgoing`. A Ktor session has
+**three** colliding members, not two:
+
+| session member | type | our member (before) |
+|---|---|---|
+| `incoming` | `ReceiveChannel<Frame>` | `SharedFlow<Envelope>` |
+| `outgoing` | `SendChannel<Frame>` | `Channel<String>` |
+| `send(String)` | extension | `fun send(type, payload, id)` |
+
+So `for (text in outgoing)` resolved to the session's **SendChannel**, which by
+definition has no `iterator()`. Same root cause, third member. Symmetric misses
+like this are exactly why the fix has to be structural.
+
+### Structural fix, not a third rename
+
+`RealtimeClient` was rewritten so the `webSocket { }` block contains only two
+statements: `attempt = 0` and `runSession(this)`.
+
+`runSession(session: DefaultClientWebSocketSession)` takes the session as an
+ordinary parameter, so inside it **there is no implicit session receiver at
+all**. Every socket access must be spelled `session.send` / `session.incoming`,
+and the compiler has nothing left to guess. Any future property added to this
+class is now immune, whatever it is called.
+
+Our members are also named `events` / `outbox` / `enqueue`, and the rule is
+written at the top of the file so nobody "tidies" it back.
+
+Verified mechanically: no bare `incoming` / `outgoing` reference remains in the
+file, and `RealtimeClient` is the only file in the app that touches a WebSocket
+session.

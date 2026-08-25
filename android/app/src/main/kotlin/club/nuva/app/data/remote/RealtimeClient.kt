@@ -11,6 +11,7 @@ import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,10 +21,10 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlin.math.min
 import kotlin.random.Random
 
@@ -34,8 +35,30 @@ import kotlin.random.Random
  * JSON envelope { type, id?, payload? }. One decoder, one encoder, forever.
  *
  * Reconnection uses exponential backoff with jitter. Without jitter, every
- * phone on the planet reconnects at the same second after a server restart and
- * knocks it over again.
+ * phone reconnects at the same second after a server restart and knocks it
+ * over again.
+ *
+ * ---------------------------------------------------------------------------
+ * NAMING RULE FOR THIS FILE - do not "clean it up" later.
+ *
+ * A Ktor `DefaultClientWebSocketSession` has members named `incoming`,
+ * `outgoing` and `send`. Inside a `webSocket { }` block the session is an
+ * implicit receiver, so any class property with one of those names silently
+ * competes with it during name resolution. That produced two build failures in
+ * a row (a Flow being iterated as a channel, then a SendChannel being iterated
+ * as a ReceiveChannel) and - far worse - a `send(String)` call that was one
+ * resolution rule away from writing frames into our own outbox instead of the
+ * socket. That version would have compiled and shipped as "messages never
+ * arrive".
+ *
+ * Two rules keep it dead:
+ *   1. Our own members are named `events`, `outbox`, `enqueue` - never
+ *      `incoming`, `outgoing`, `send`.
+ *   2. The `webSocket { }` block does nothing but hand `this` to
+ *      `runSession(session)`. Inside that function there is NO implicit
+ *      session receiver at all, so every socket access must be written
+ *      `session.x` and the compiler cannot guess wrong.
+ * ---------------------------------------------------------------------------
  */
 class RealtimeClient(
     private val api: NuvaApi,
@@ -63,12 +86,13 @@ class RealtimeClient(
     private val _state = MutableStateFlow(State.Idle)
     val state: StateFlow<State> = _state.asStateFlow()
 
-    // Named `events`, NOT `incoming`: inside webSocket { } the session already
-    // has a member called `incoming`, and the outer property used to shadow it.
+    /** Decoded frames from the server. Named `events`, never `incoming`. */
     private val _events = MutableSharedFlow<Envelope>(replay = 0, extraBufferCapacity = 64)
     val events: SharedFlow<Envelope> = _events.asSharedFlow()
 
-    private val outgoing = Channel<String>(capacity = 64)
+    /** Frames waiting to be written. Named `outbox`, never `outgoing`. */
+    private val outbox = Channel<String>(capacity = 64)
+
     private var connectionJob: Job? = null
 
     fun connect() {
@@ -83,17 +107,14 @@ class RealtimeClient(
     }
 
     /**
-     * Queues a frame. Safe to call while offline: it is sent on reconnect.
-     *
-     * Named `enqueue`, NOT `send`: the WebSocket session exposes its own
-     * `send(String)`, and two overloads named `send` in overlapping scopes is
-     * how you silently post a frame into the wrong sink.
+     * Queues a frame. Safe to call while offline: it is written on reconnect.
+     * Named `enqueue`, never `send`.
      */
     fun enqueue(type: String, payload: JsonElement? = null, id: String? = null) {
         val frame = json.encodeToString(Envelope.serializer(), Envelope(type, id, payload))
-        val result = outgoing.trySend(frame)
+        val result = outbox.trySend(frame)
         if (result.isFailure) {
-            Log.w(TAG, "outgoing queue is full, dropping frame of type=$type")
+            Log.w(TAG, "outbox is full, dropping frame of type=$type")
         }
     }
 
@@ -110,55 +131,13 @@ class RealtimeClient(
             _state.value = if (attempt == 0) State.Connecting else State.Reconnecting
 
             try {
-                val wsUrl = api.baseUrl
-                    .replaceFirst("https://", "wss://")
-                    .replaceFirst("http://", "ws://")
-                    .trimEnd('/') + "/${NuvaApi.API_PREFIX}/ws"
-
                 api.client.webSocket(
-                    urlString = wsUrl,
+                    urlString = websocketUrl(),
                     request = { header("Authorization", "Bearer $token") },
                 ) {
-                    // Bound explicitly: every `session.x` below is provably the
-                    // socket and never an outer-class member with the same name.
-                    val session: DefaultClientWebSocketSession = this
+                    // Deliberately the only two statements in this block.
                     attempt = 0
-                    _state.value = State.Online
-                    Log.i(TAG, "realtime channel open")
-
-                    // Writer pump for this connection.
-                    val writer = launch {
-                        for (text in outgoing) {
-                            session.send(text)
-                        }
-                    }
-                    // Heartbeat so the server never times us out at 90s.
-                    val heartbeat = launch {
-                        while (isActive) {
-                            delay(HEARTBEAT_MS)
-                            session.send(
-                                json.encodeToString(Envelope.serializer(), Envelope("ping")),
-                            )
-                        }
-                    }
-
-                    try {
-                        for (frame in session.incoming) {
-                            if (frame !is Frame.Text) continue
-                            val text = frame.readText()
-                            val envelope = runCatching {
-                                json.decodeFromString(Envelope.serializer(), text)
-                            }.getOrNull()
-                            if (envelope == null) {
-                                Log.w(TAG, "unparsable frame: ${text.take(120)}")
-                                continue
-                            }
-                            _events.emit(envelope)
-                        }
-                    } finally {
-                        heartbeat.cancel()
-                        writer.cancel()
-                    }
+                    runSession(this)
                 }
             } catch (t: Throwable) {
                 Log.w(TAG, "realtime channel dropped: ${t.message}")
@@ -171,6 +150,55 @@ class RealtimeClient(
             delay(backoffMillis(attempt))
         }
     }
+
+    /**
+     * Drives one live connection until it closes. `session` is a plain
+     * parameter on purpose - see the naming rule at the top of this file.
+     */
+    private suspend fun runSession(session: DefaultClientWebSocketSession) {
+        _state.value = State.Online
+        Log.i(TAG, "realtime channel open")
+
+        coroutineScope {
+            val writer = launch {
+                for (text in outbox) {
+                    session.send(text)
+                }
+            }
+
+            // Application-level heartbeat so the server never times us out.
+            val heartbeat = launch {
+                while (isActive) {
+                    delay(HEARTBEAT_MS)
+                    session.send(json.encodeToString(Envelope.serializer(), Envelope("ping")))
+                }
+            }
+
+            try {
+                for (frame in session.incoming) {
+                    if (frame !is Frame.Text) continue
+                    val text = frame.readText()
+                    val envelope = runCatching {
+                        json.decodeFromString(Envelope.serializer(), text)
+                    }.getOrNull()
+                    if (envelope == null) {
+                        Log.w(TAG, "unparsable frame: ${text.take(120)}")
+                        continue
+                    }
+                    _events.emit(envelope)
+                }
+            } finally {
+                heartbeat.cancel()
+                writer.cancel()
+            }
+        }
+    }
+
+    private fun websocketUrl(): String =
+        api.baseUrl
+            .replaceFirst("https://", "wss://")
+            .replaceFirst("http://", "ws://")
+            .trimEnd('/') + "/${NuvaApi.API_PREFIX}/ws"
 
     /** 1s, 2s, 4s ... capped at 30s, plus up to 1s of jitter. */
     private fun backoffMillis(attempt: Int): Long {
