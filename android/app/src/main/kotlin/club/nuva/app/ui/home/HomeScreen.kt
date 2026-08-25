@@ -13,7 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BoltOutlined
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -138,7 +138,7 @@ fun DiagnosticsScreen(
         Column(modifier = Modifier.padding(horizontal = NuvaSpace.gutter)) {
             NuvaGhostButton(
                 text = "Send echo frame",
-                icon = Icons.Filled.Bolt,
+                icon = Icons.AutoMirrored.Filled.Send,
                 onClick = viewModel::sendEcho,
                 enabled = realtimeState == RealtimeClient.State.Online,
             )

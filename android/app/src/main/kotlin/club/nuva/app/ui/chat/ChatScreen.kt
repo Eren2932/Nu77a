@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -228,17 +229,6 @@ fun ChatScreen(
             onVoice = { hint = "Voice messages arrive in sprint 3. No length limit, that is the point." },
         )
     }
-}
-
-/** LazyColumn's indexed items, imported locally to keep the import list honest. */
-private inline fun androidx.compose.foundation.lazy.LazyListScope.itemsIndexed(
-    items: List<ChatDraftStore.Message>,
-    crossinline itemContent: @Composable (Int, ChatDraftStore.Message) -> Unit,
-) = items(
-    count = items.size,
-    key = { index -> items[index].id },
-) { index ->
-    itemContent(index, items[index])
 }
 
 @Composable

@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import club.nuva.app.data.local.UiPrefs
+import club.nuva.app.di.ServiceLocator
 
 /**
  * NUVA VISUAL LANGUAGE — "Aurora"
@@ -288,14 +291,12 @@ object NuvaTheme {
 @Composable
 fun nuvaDarkThemeDefault(): Boolean {
     val systemDark = isSystemInDarkTheme()
-    if (!club.nuva.app.di.ServiceLocator.isInitialized) return systemDark
-    val prefs = androidx.lifecycle.compose.collectAsStateWithLifecycle(
-        club.nuva.app.di.ServiceLocator.uiPrefs.state,
-    ).value
+    if (!ServiceLocator.isInitialized) return systemDark
+    val prefs = ServiceLocator.uiPrefs.state.collectAsStateWithLifecycle().value
     return when (prefs.themeMode) {
-        club.nuva.app.data.local.UiPrefs.ThemeMode.Dark -> true
-        club.nuva.app.data.local.UiPrefs.ThemeMode.Light -> false
-        club.nuva.app.data.local.UiPrefs.ThemeMode.System -> systemDark
+        UiPrefs.ThemeMode.Dark -> true
+        UiPrefs.ThemeMode.Light -> false
+        UiPrefs.ThemeMode.System -> systemDark
     }
 }
 
