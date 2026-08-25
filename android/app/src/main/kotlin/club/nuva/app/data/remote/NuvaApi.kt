@@ -2,6 +2,7 @@ package club.nuva.app.data.remote
 
 import android.util.Log
 import club.nuva.app.BuildConfig
+import club.nuva.app.data.local.ServerStore
 import club.nuva.app.data.local.SessionStore
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -44,8 +45,18 @@ import kotlin.time.Duration.Companion.seconds
  */
 class NuvaApi(
     private val sessionStore: SessionStore,
-    val baseUrl: String = BuildConfig.API_BASE_URL,
+    private val serverStore: ServerStore,
 ) {
+    /**
+     * The server this app currently talks to, read fresh on every call.
+     *
+     * NOT a constructor value: Nuva can be self-hosted, so the address is user
+     * data that may change at runtime. BuildConfig.API_BASE_URL is only the
+     * fallback suggestion until the user has picked one.
+     */
+    val baseUrl: String
+        get() = serverStore.current() ?: BuildConfig.API_BASE_URL
+
     private val json = Json {
         ignoreUnknownKeys = true      // server may add fields; old apps keep working
         explicitNulls = false
@@ -203,6 +214,42 @@ class NuvaApi(
     }
 
     suspend fun meta(): MetaDto = call { client.get("$baseUrl/$API_PREFIX/meta") }
+
+    /**
+     * Asks an arbitrary address whether a Nuva server lives there.
+     *
+     * Uses [refreshClient] on purpose: no Auth plugin, so a wrong address can
+     * never trigger a token refresh against a stranger's host, and the current
+     * session is never touched by a failed probe.
+     */
+    suspend fun probe(candidateBaseUrl: String): MetaDto {
+        val response = try {
+            refreshClient.get("$candidateBaseUrl/$API_PREFIX/meta")
+        } catch (e: IOException) {
+            throw ApiException.network(e)
+        } catch (t: Throwable) {
+            throw ApiException.unexpected(t)
+        }
+        if (!response.status.isSuccess()) {
+            throw ApiException(
+                statusCode = response.status.value,
+                code = "not_a_nuva_server",
+                message = "That address answered with ${response.status.value}. " +
+                    "It does not look like a Nuva server.",
+            )
+        }
+        return try {
+            // Explicit type argument: never let a reified generic be inferred
+            // from a return position when the payload comes from an unknown host.
+            response.body<MetaDto>()
+        } catch (t: Throwable) {
+            throw ApiException(
+                statusCode = response.status.value,
+                code = "not_a_nuva_server",
+                message = "Something answered there, but it is not a Nuva server.",
+            )
+        }
+    }
 
     /** Releases both HTTP clients. Called from Application.onTerminate paths. */
     fun close() {

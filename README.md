@@ -28,7 +28,9 @@
 ```bash
 cp .env.example .env
 ./scripts/gen-secrets.sh        # сгенерирует JWT-секрет и пароль Postgres
-docker compose up -d --build
+docker compose --profile tls up -d --build   # VPS + domain
+# or, on your own PC with no domain:
+# docker compose --profile tunnel up -d --build
 ./scripts/smoke-test.sh http://localhost:8080
 ```
 

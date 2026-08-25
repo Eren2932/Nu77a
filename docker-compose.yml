@@ -1,9 +1,18 @@
-# Production stack for a single VPS: Postgres + Nuva + Caddy (automatic HTTPS).
+# Nuva stack. Two ways to expose it, chosen by profile - never both.
 #
 #   cp .env.example .env && ./scripts/gen-secrets.sh
-#   docker compose up -d --build
 #
-# One command, no manual certificate work, no nginx config to forget.
+#   # A) Own machine, no domain, no public IP, no cost. Cloudflare gives you a
+#   #    throwaway https:// address you paste into the app.
+#   docker compose --profile tunnel up -d --build
+#   ./scripts/tunnel-url.sh
+#
+#   # B) VPS with a domain. Caddy gets a Let's Encrypt certificate on boot.
+#   docker compose --profile tls up -d --build
+#
+# db and server have no profile, so they start in both cases. Caddy is NOT
+# started by default on purpose: without NUVA_DOMAIN it would fail in a loop
+# and bury the real logs.
 
 services:
   db:
@@ -54,6 +63,7 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    profiles: ["tls"]
     depends_on: [server]
     ports:
       - "80:80"
@@ -65,6 +75,34 @@ services:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks: [nuva]
+
+  # ---------------------------------------------------------------------------
+  # Profile "tunnel": Cloudflare quick tunnel. No account, no domain, no card.
+  # Prints a public https:// URL that also carries WebSockets, which is exactly
+  # what Nuva needs. The URL changes on every restart - harmless, because the
+  # server address is typed into the app rather than baked into the APK.
+  # ---------------------------------------------------------------------------
+  tunnel-quick:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    depends_on: [server]
+    command: tunnel --no-autoupdate --url http://server:8080
+    networks: [nuva]
+
+  # ---------------------------------------------------------------------------
+  # Profile "tunnel-named": stable hostname on a domain you added to Cloudflare.
+  # Same price (free), but the address survives restarts. Create the tunnel in
+  # the Cloudflare dashboard, put its token in .env, point it at
+  # http://server:8080.
+  # ---------------------------------------------------------------------------
+  tunnel-named:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel-named"]
+    depends_on: [server]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks: [nuva]
 
 volumes:

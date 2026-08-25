@@ -87,7 +87,9 @@ nano .env
 #   NUVA_ACME_EMAIL=твоя@почта
 #   NUVA_ALLOWED_ORIGINS=https://твойдомен.ru
 
-docker compose up -d --build
+docker compose --profile tls up -d --build   # VPS + domain
+# or, on your own PC with no domain:
+# docker compose --profile tunnel up -d --build
 docker compose logs -f server
 ```
 
@@ -164,3 +166,35 @@ Actions соберёт подписанный APK и создаст GitHub Relea
 2. Логи сервера: `docker compose logs --tail=200 server`
 3. Логи приложения: `adb logcat -s NuvaApp NuvaHttp NuvaRealtime SessionStore`
 4. Присылай мне точный текст ошибки. Не пересказ — текст.
+
+---
+
+# Update, 2026-08-25: server address is now chosen in the app
+
+Nuva is self-hostable, so the client no longer has a server baked into it. On
+first launch you get a **Choose your server** screen, and there is a
+`Server: <host> · change` link under the sign-in form.
+
+Two consequences for you:
+
+1. `docker compose up -d --build` alone no longer starts a public endpoint.
+   Pick how you want to be reachable:
+
+   ```bash
+   # Own PC, no domain, no cost - Cloudflare gives you an https:// address
+   docker compose --profile tunnel up -d --build
+   ./scripts/tunnel-url.sh
+
+   # VPS with a domain - Caddy gets a Let's Encrypt certificate itself
+   docker compose --profile tls up -d --build
+   ```
+
+   Caddy is deliberately not in the default set: without `NUVA_DOMAIN` it would
+   crash-loop and hide the real logs.
+
+2. Debug builds accept `http://10.0.2.2:8080`. **Release builds refuse plain
+   http** - a password over cleartext is not a trade-off worth having.
+
+Start here: `docs/TUNNEL.md`. Then read `docs/MODEL.md` for why the project is
+shaped this way, including the wording that is safe to put on the landing page
+and the wording that is not.

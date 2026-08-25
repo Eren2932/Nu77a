@@ -65,7 +65,9 @@ cp .env.example .env
 nano .env          # NUVA_DOMAIN, NUVA_ACME_EMAIL, NUVA_ALLOWED_ORIGINS
 
 # 5. Поехали
-docker compose up -d --build
+docker compose --profile tls up -d --build   # VPS + domain
+# or, on your own PC with no domain:
+# docker compose --profile tunnel up -d --build
 docker compose logs -f server
 ```
 
