@@ -1,6 +1,10 @@
 package club.nuva.app.ui.auth
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,189 +13,194 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.AlternateEmail
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import club.nuva.app.R
-import club.nuva.app.ui.components.ErrorBanner
+import club.nuva.app.ui.components.ErrorBannerHost
 import club.nuva.app.ui.components.RecoveryCodeDialog
+import club.nuva.app.ui.design.NuvaButton
+import club.nuva.app.ui.design.NuvaCanvas
+import club.nuva.app.ui.design.NuvaField
+import club.nuva.app.ui.design.NuvaSegmented
+import club.nuva.app.ui.theme.NuvaSpace
+import club.nuva.app.ui.theme.NuvaTheme
 
+/**
+ * Sign in / create account.
+ *
+ * One screen, one segmented control, no separate registration flow to keep in
+ * sync. Errors appear inline above the form and stay until dismissed. The
+ * recovery-code dialog is the only modal in the whole app, because it is the
+ * only moment where losing the information loses the account.
+ *
+ * The ViewModel contract is untouched from sprint 0 — this is a restyle, and
+ * auth logic that already worked on a real device does not get rewritten for
+ * cosmetics.
+ */
 @Composable
 fun AuthScreen(
     viewModel: AuthViewModel,
     modifier: Modifier = Modifier,
 ) {
+    val p = NuvaTheme.palette
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    val registering = state.mode == AuthViewModel.Mode.Register
 
-    state.recoveryCode?.let { code ->
-        RecoveryCodeDialog(
-            code = code,
-            onAcknowledged = viewModel::dismissRecoveryCode,
-        )
-    }
-
-    Box(modifier = modifier.fillMaxSize()) {
+    NuvaCanvas(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
                 .imePadding()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = NuvaSpace.gutter),
         ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.tagline),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
+            Spacer(Modifier.height(NuvaSpace.huge))
 
-            Spacer(Modifier.height(32.dp))
-
-            TabRow(selectedTabIndex = if (state.mode == AuthViewModel.Mode.SignIn) 0 else 1) {
-                Tab(
-                    selected = state.mode == AuthViewModel.Mode.SignIn,
-                    onClick = { viewModel.setMode(AuthViewModel.Mode.SignIn) },
-                    text = { Text(stringResource(R.string.tab_sign_in)) },
-                )
-                Tab(
-                    selected = state.mode == AuthViewModel.Mode.Register,
-                    onClick = { viewModel.setMode(AuthViewModel.Mode.Register) },
-                    text = { Text(stringResource(R.string.tab_create_account)) },
+            // Wordmark. The rounded square holding a single letter is the same
+            // mark as the launcher icon, so the app is recognisable from the
+            // first frame after the icon is tapped.
+            Box(
+                modifier = Modifier
+                    .size(66.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(p.accent),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "N",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = p.accentInk,
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(NuvaSpace.xl))
+            Text(
+                text = if (registering) "Create an account" else "Welcome back",
+                style = MaterialTheme.typography.headlineLarge,
+                color = p.text,
+            )
+            Spacer(Modifier.height(NuvaSpace.xs))
+            Text(
+                text = if (registering) {
+                    "No phone number, no email. A username and a password are enough, " +
+                        "and they exist only on this server."
+                } else {
+                    "Sign in with the username you created on this server."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = p.textMuted,
+            )
 
-            OutlinedTextField(
+            Spacer(Modifier.height(NuvaSpace.xl))
+            NuvaSegmented(
+                options = listOf("Sign in", "Create account"),
+                selectedIndex = if (registering) 1 else 0,
+                onSelect = { index ->
+                    viewModel.setMode(
+                        if (index == 1) AuthViewModel.Mode.Register else AuthViewModel.Mode.SignIn,
+                    )
+                },
+            )
+
+            Spacer(Modifier.height(NuvaSpace.lg))
+            ErrorBannerHost(
+                message = state.errorMessage,
+                onDismiss = viewModel::dismissError,
+            )
+
+            Spacer(Modifier.height(NuvaSpace.md))
+            NuvaField(
                 value = state.username,
                 onValueChange = viewModel::onUsernameChange,
-                label = { Text(stringResource(R.string.field_username)) },
-                singleLine = true,
+                label = "Username",
+                placeholder = "lowercase, digits, underscore",
+                leadingIcon = Icons.Filled.AlternateEmail,
+                mono = true,
                 enabled = !state.isBusy,
-                supportingText = { Text("3-24 characters: a-z, 0-9, _") },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Ascii,
-                    imeAction = ImeAction.Next,
-                ),
-                modifier = Modifier.fillMaxWidth(),
+                // Only complain once there is something to complain about.
+                errorText = state.username.takeIf { it.isNotEmpty() }?.let { state.usernameError },
+                supporting = if (registering) "Permanent. Choose one you will still like." else null,
             )
 
-            if (state.mode == AuthViewModel.Mode.Register) {
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = state.displayName,
-                    onValueChange = viewModel::onDisplayNameChange,
-                    label = { Text(stringResource(R.string.field_display_name)) },
-                    singleLine = true,
-                    enabled = !state.isBusy,
-                    supportingText = { Text("Optional, shown to other people") },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = state.password,
-                onValueChange = viewModel::onPasswordChange,
-                label = { Text(stringResource(R.string.field_password)) },
-                singleLine = true,
-                enabled = !state.isBusy,
-                supportingText = { Text("At least 8 characters") },
-                visualTransformation = if (passwordVisible) {
-                    VisualTransformation.None
-                } else {
-                    PasswordVisualTransformation()
-                },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            imageVector = if (passwordVisible) {
-                                Icons.Filled.VisibilityOff
-                            } else {
-                                Icons.Filled.Visibility
-                            },
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                        )
-                    }
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            Button(
-                onClick = viewModel::submit,
-                enabled = state.canSubmit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+            AnimatedVisibility(
+                visible = registering,
+                enter = fadeIn(tween(180)),
+                exit = fadeOut(tween(120)),
             ) {
-                if (state.isBusy) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.height(22.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(
-                        text = if (state.mode == AuthViewModel.Mode.SignIn) {
-                            stringResource(R.string.action_sign_in)
-                        } else {
-                            stringResource(R.string.action_create_account)
-                        },
-                        fontWeight = FontWeight.SemiBold,
+                Column {
+                    Spacer(Modifier.height(NuvaSpace.md))
+                    NuvaField(
+                        value = state.displayName,
+                        onValueChange = viewModel::onDisplayNameChange,
+                        label = "Display name",
+                        placeholder = "How people see you",
+                        leadingIcon = Icons.Filled.Badge,
+                        enabled = !state.isBusy,
+                        supporting = "You can change this any time.",
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(NuvaSpace.md))
+            NuvaField(
+                value = state.password,
+                onValueChange = viewModel::onPasswordChange,
+                label = "Password",
+                leadingIcon = Icons.Filled.Lock,
+                isPassword = true,
+                enabled = !state.isBusy,
+                errorText = state.password.takeIf { it.isNotEmpty() }?.let { state.passwordError },
+                supporting = if (registering) {
+                    "Nobody can reset this for you. That is the trade for having no email."
+                } else {
+                    null
+                },
+            )
 
-            state.errorMessage?.let { message ->
-                ErrorBanner(message = message, onDismiss = viewModel::dismissError)
-            }
+            Spacer(Modifier.height(NuvaSpace.xl))
+            NuvaButton(
+                text = if (registering) "Create account" else "Sign in",
+                onClick = viewModel::submit,
+                enabled = state.canSubmit,
+                busy = state.isBusy,
+            )
+
+            Spacer(Modifier.height(NuvaSpace.lg))
+            Text(
+                text = "Nuva never asks for a phone number, and there is no central " +
+                    "directory. Whoever runs this server is the only party you trust.",
+                style = MaterialTheme.typography.bodySmall,
+                color = p.textFaint,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(NuvaSpace.huge))
         }
+    }
+
+    val code = state.recoveryCode
+    if (code != null) {
+        RecoveryCodeDialog(
+            code = code,
+            onAcknowledged = viewModel::dismissRecoveryCode,
+        )
     }
 }

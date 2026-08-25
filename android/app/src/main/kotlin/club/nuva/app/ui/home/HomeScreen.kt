@@ -1,6 +1,6 @@
 package club.nuva.app.ui.home
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,151 +8,179 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.BoltOutlined
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import club.nuva.app.BuildConfig
 import club.nuva.app.data.remote.RealtimeClient
-import club.nuva.app.ui.components.ErrorBanner
+import club.nuva.app.ui.components.ErrorBannerHost
 import club.nuva.app.ui.components.StatusPill
+import club.nuva.app.ui.design.NuvaCard
+import club.nuva.app.ui.design.NuvaGhostButton
+import club.nuva.app.ui.design.NuvaHairline
+import club.nuva.app.ui.design.NuvaHeader
+import club.nuva.app.ui.design.NuvaMonoValue
+import club.nuva.app.ui.design.NuvaRow
+import club.nuva.app.ui.design.NuvaSectionLabel
+import club.nuva.app.ui.theme.NuvaMonoStyle
+import club.nuva.app.ui.theme.NuvaSpace
+import club.nuva.app.ui.theme.NuvaTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * DIAGNOSTICS — the old sprint-0 home screen, kept on purpose.
+ *
+ * It proves the vertical slice on a real device in ten seconds: stored session
+ * -> authenticated HTTP call -> live WebSocket -> echo round trip. That is the
+ * single most useful tool we have when a build "does nothing" on someone's
+ * phone, so it moved to Settings instead of being deleted when the chat list
+ * took over the home screen.
+ *
+ * Reachable at Me -> Settings -> Diagnostics.
+ */
 @Composable
-fun HomeScreen(
+fun DiagnosticsScreen(
     viewModel: HomeViewModel,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val p = NuvaTheme.palette
     val state by viewModel.state.collectAsStateWithLifecycle()
     val realtimeState by viewModel.realtimeState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(state.session?.displayName?.ifBlank { "Nuva" } ?: "Nuva") },
-                actions = {
-                    IconButton(onClick = viewModel::refresh) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
-                    }
-                    IconButton(onClick = viewModel::logout) {
-                        Icon(Icons.Filled.Logout, contentDescription = "Sign out")
-                    }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        NuvaHeader(
+            title = "Diagnostics",
+            subtitle = "For when the app looks fine and is not",
+            compact = true,
+            onBack = onBack,
+            actions = {
+                IconButton(onClick = viewModel::refresh, enabled = !state.isRefreshing) {
+                    Icon(
+                        Icons.Filled.Refresh,
+                        contentDescription = "Refresh",
+                        tint = if (state.isRefreshing) p.textFaint else p.textMuted,
+                    )
+                }
+            },
+        )
+
+        Row(
+            modifier = Modifier.padding(horizontal = NuvaSpace.gutter),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            StatusPill(
+                label = when (realtimeState) {
+                    RealtimeClient.State.Online -> "Realtime online"
+                    RealtimeClient.State.Connecting -> "Connecting…"
+                    RealtimeClient.State.Reconnecting -> "Reconnecting…"
+                    RealtimeClient.State.Idle -> "Offline"
                 },
+                online = realtimeState == RealtimeClient.State.Online,
+                connecting = realtimeState == RealtimeClient.State.Connecting ||
+                    realtimeState == RealtimeClient.State.Reconnecting,
             )
-        },
-    ) { innerPadding ->
+            Spacer(Modifier.width(NuvaSpace.sm))
+            StatusPill(
+                label = "${state.onlineUsers} online",
+                online = state.onlineUsers > 0,
+            )
+        }
+
+        Spacer(Modifier.height(NuvaSpace.md))
+        ErrorBannerHost(
+            message = state.errorMessage,
+            onDismiss = viewModel::dismissError,
+            modifier = Modifier.padding(horizontal = NuvaSpace.gutter),
+        )
+
+        NuvaSectionLabel("Session")
+        NuvaCard(modifier = Modifier.padding(horizontal = NuvaSpace.gutter)) {
+            Column {
+                NuvaRow(
+                    title = "Username",
+                    showChevron = false,
+                    trailing = { NuvaMonoValue(state.session?.username.orEmpty()) },
+                )
+                NuvaHairline()
+                NuvaRow(
+                    title = "User id",
+                    showChevron = false,
+                    trailing = { NuvaMonoValue(state.session?.userId.orEmpty()) },
+                )
+                NuvaHairline()
+                NuvaRow(
+                    title = "Server API",
+                    showChevron = false,
+                    trailing = { NuvaMonoValue(state.serverVersion.ifBlank { "unknown" }) },
+                )
+            }
+        }
+
+        NuvaSectionLabel("Socket")
+        Column(modifier = Modifier.padding(horizontal = NuvaSpace.gutter)) {
+            NuvaGhostButton(
+                text = "Send echo frame",
+                icon = Icons.Filled.Bolt,
+                onClick = viewModel::sendEcho,
+                enabled = realtimeState == RealtimeClient.State.Online,
+            )
+            Spacer(Modifier.height(NuvaSpace.xs))
+            Text(
+                text = if (realtimeState == RealtimeClient.State.Online) {
+                    "A frame goes out and must come back. If it does, the socket is real."
+                } else {
+                    "Enabled once the socket is online."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = p.textFaint,
+            )
+        }
+
+        NuvaSectionLabel("Frame log")
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(horizontal = NuvaSpace.gutter)
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.medium)
+                .background(p.surfaceSunken)
+                .padding(NuvaSpace.md),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                StatusPill(
-                    label = when (realtimeState) {
-                        RealtimeClient.State.Online -> "Realtime online"
-                        RealtimeClient.State.Connecting -> "Connecting..."
-                        RealtimeClient.State.Reconnecting -> "Reconnecting..."
-                        RealtimeClient.State.Idle -> "Offline"
-                    },
-                    online = realtimeState == RealtimeClient.State.Online,
-                    connecting = realtimeState == RealtimeClient.State.Connecting ||
-                        realtimeState == RealtimeClient.State.Reconnecting,
+            if (state.log.isEmpty()) {
+                Text(
+                    text = "No frames yet.",
+                    style = NuvaMonoStyle,
+                    color = p.textFaint,
                 )
-                Spacer(Modifier.width(8.dp))
-                StatusPill(
-                    label = "${state.onlineUsers} online",
-                    online = state.onlineUsers > 0,
-                )
-            }
-
-            Card(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Account", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    InfoRow("Username", state.session?.username.orEmpty())
-                    InfoRow("User id", state.session?.userId.orEmpty())
-                    InfoRow("App", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-                    InfoRow("Server", BuildConfig.API_BASE_URL)
-                    InfoRow("API", state.serverVersion.ifBlank { "unknown" })
-                }
-            }
-
-            state.errorMessage?.let { message ->
-                ErrorBanner(message = message, onDismiss = viewModel::dismissError)
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = viewModel::sendEcho, modifier = Modifier.weight(1f)) {
-                    Text("Send echo")
-                }
-                OutlinedButton(onClick = viewModel::refresh, modifier = Modifier.weight(1f)) {
-                    Text("Refresh")
-                }
-            }
-
-            Text(
-                "Realtime log",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                items(state.log) { line ->
+            } else {
+                state.log.forEach { line ->
                     Text(
                         text = line,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = NuvaMonoStyle,
+                        color = if (line.startsWith("->")) p.accentSoft else p.textMuted,
+                        modifier = Modifier.padding(vertical = 1.dp),
                     )
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 3.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(96.dp),
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.weight(1f),
-        )
+        Spacer(Modifier.height(NuvaSpace.huge))
     }
 }

@@ -25,10 +25,10 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import club.nuva.app.di.ServiceLocator
 import club.nuva.app.ui.auth.AuthScreen
 import club.nuva.app.ui.auth.AuthViewModel
-import club.nuva.app.ui.home.HomeScreen
-import club.nuva.app.ui.home.HomeViewModel
 import club.nuva.app.ui.server.ServerScreen
 import club.nuva.app.ui.server.ServerViewModel
+import club.nuva.app.ui.shell.NuvaShell
+import club.nuva.app.ui.theme.NuvaTheme
 import club.nuva.app.util.ServerUrl
 
 /**
@@ -37,7 +37,8 @@ import club.nuva.app.util.ServerUrl
  * Navigation is driven by two facts only: is a server configured, and is there
  * a stored session. There is no back stack that could show a chat list to a
  * signed-out user, and no way to reach the sign-in form without a server that
- * has actually answered.
+ * has actually answered. Unchanged from sprint 0 on purpose — this part was
+ * proven on a real device, so the restyle does not touch it.
  */
 @Composable
 fun NuvaApp() {
@@ -55,7 +56,7 @@ fun NuvaApp() {
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background,
+        color = NuvaTheme.palette.canvas,
     ) {
         Crossfade(
             targetState = destination,
@@ -103,21 +104,7 @@ fun NuvaApp() {
                 }
 
                 Destination.Home -> {
-                    val homeViewModel: HomeViewModel = viewModel(
-                        // Keyed by user id: switching accounts builds a fresh
-                        // graph instead of leaking the previous user's state.
-                        key = "home-${session?.userId}",
-                        factory = viewModelFactory {
-                            initializer {
-                                HomeViewModel(
-                                    authRepository = ServiceLocator.authRepository,
-                                    api = ServiceLocator.api,
-                                    realtime = ServiceLocator.realtime,
-                                )
-                            }
-                        },
-                    )
-                    HomeScreen(viewModel = homeViewModel)
+                    NuvaShell(onSwitchServer = { switchingServer = true })
                 }
             }
         }
@@ -138,7 +125,7 @@ private fun ServerFooter(
             Text(
                 text = "Server: $host  ·  change",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = NuvaTheme.palette.textMuted,
             )
         }
     }

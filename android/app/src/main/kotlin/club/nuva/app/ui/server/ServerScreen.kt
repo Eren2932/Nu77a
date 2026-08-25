@@ -1,8 +1,9 @@
 package club.nuva.app.ui.server
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,39 +11,42 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import club.nuva.app.R
-import club.nuva.app.ui.components.ErrorBanner
+import club.nuva.app.ui.components.ErrorBannerHost
+import club.nuva.app.ui.design.NuvaButton
+import club.nuva.app.ui.design.NuvaCanvas
+import club.nuva.app.ui.design.NuvaCard
+import club.nuva.app.ui.design.NuvaField
+import club.nuva.app.ui.design.NuvaGhostButton
+import club.nuva.app.ui.theme.NuvaSpace
+import club.nuva.app.ui.theme.NuvaTheme
 
 /**
- * Server picker. The first screen a new user sees, and the honest expression of
- * what Nuva is: you choose whose machine your messages live on.
+ * The first screen of the app, and the most important one to get right.
  *
- * @param onConnected called once the address answered and was stored.
- * @param onCancel non-null only when a server is already configured, so the
- *   user can back out instead of being trapped here.
+ * It has to teach the whole product in five seconds: there is no "Nuva Inc"
+ * server, you pick who hosts you, and that choice is reversible. The address is
+ * verified against /v1/meta before it is stored — a typo must never be able to
+ * leave the app pointed at nothing.
  */
 @Composable
 fun ServerScreen(
@@ -51,130 +55,146 @@ fun ServerScreen(
     onCancel: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val p = NuvaTheme.palette
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // Navigation is a side effect of a successful probe, never of a button tap:
-    // that makes "left the screen without a working server" impossible.
+    // The ViewModel signals success by setting connectedTo. Navigation lives
+    // with the caller, so this screen never needs a NavController.
     LaunchedEffect(state.connectedTo) {
         if (state.connectedTo != null) onConnected()
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    NuvaCanvas(modifier = modifier) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
                 .imePadding()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = NuvaSpace.gutter),
         ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(NuvaSpace.huge))
+
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(p.accent.copy(alpha = 0.16f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Dns,
+                    contentDescription = null,
+                    tint = p.accent,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
+
+            Spacer(Modifier.height(NuvaSpace.xl))
             Text(
                 text = "Choose your server",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineLarge,
+                color = p.text,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(NuvaSpace.xs))
             Text(
-                text = "Nuva has no single owner. Your messages live on the server " +
-                    "you pick here - ours, your friend's, or one you run yourself.",
+                text = "Nuva has no company behind it. Your account, your messages and " +
+                    "your contacts live on the server you pick — ours, a friend's, or " +
+                    "one you run yourself.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
+                color = p.textMuted,
             )
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(NuvaSpace.xl))
+            ErrorBannerHost(
+                message = state.errorMessage,
+                onDismiss = viewModel::dismissError,
+            )
 
-            state.errorMessage?.let { message ->
-                ErrorBanner(message = message, onDismiss = viewModel::dismissError)
-                Spacer(Modifier.height(16.dp))
-            }
-
-            OutlinedTextField(
+            Spacer(Modifier.height(NuvaSpace.md))
+            NuvaField(
                 value = state.input,
                 onValueChange = viewModel::onInputChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Server address") },
-                placeholder = { Text("nuva.example.com") },
-                singleLine = true,
+                label = "Server address",
+                placeholder = "nuva.club",
+                mono = true,
                 enabled = !state.isBusy,
-                supportingText = {
-                    Text(
-                        if (state.allowInsecure) {
-                            "https:// is added automatically. http:// allowed in this debug build."
-                        } else {
-                            "https:// is added automatically"
-                        },
-                    )
-                },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
-                    imeAction = ImeAction.Go,
-                ),
+                supporting = "https:// is added for you. The address is checked before it is saved.",
             )
 
-            Spacer(Modifier.height(20.dp))
-
-            Button(
+            Spacer(Modifier.height(NuvaSpace.lg))
+            NuvaButton(
+                text = if (state.isBusy) "Checking…" else "Connect",
                 onClick = viewModel::submit,
                 enabled = state.canSubmit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-            ) {
-                if (state.isBusy) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text("Connect")
-                }
-            }
+                busy = state.isBusy,
+            )
 
             if (onCancel != null) {
-                Spacer(Modifier.height(4.dp))
-                TextButton(onClick = onCancel, enabled = !state.isBusy) {
-                    Text("Cancel")
+                Spacer(Modifier.height(NuvaSpace.md))
+                NuvaGhostButton(text = "Keep current server", onClick = onCancel)
+            }
+
+            Spacer(Modifier.height(NuvaSpace.xl))
+
+            NuvaCard {
+                Column(Modifier.padding(NuvaSpace.lg)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            if (state.allowInsecure) Icons.Filled.LockOpen else Icons.Filled.Lock,
+                            contentDescription = null,
+                            tint = if (state.allowInsecure) p.amber else p.mint,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(NuvaSpace.sm))
+                        Text(
+                            text = if (state.allowInsecure) {
+                                "Debug build: plain HTTP allowed"
+                            } else {
+                                "HTTPS only"
+                            },
+                            style = MaterialTheme.typography.titleSmall,
+                            color = p.text,
+                        )
+                    }
+                    Spacer(Modifier.height(NuvaSpace.xs))
+                    Text(
+                        text = if (state.allowInsecure) {
+                            "This build accepts http:// so you can talk to a server on " +
+                                "your own machine. Release builds refuse it, because an " +
+                                "unencrypted messenger is not a messenger."
+                        } else {
+                            "Release builds only connect over HTTPS. There is no setting " +
+                                "to turn that off."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = p.textMuted,
+                    )
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(NuvaSpace.md))
 
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+            NuvaCard(accented = true) {
+                Column(Modifier.padding(NuvaSpace.lg)) {
                     Text(
-                        text = "Running your own?",
-                        style = MaterialTheme.typography.labelLarge,
+                        text = "Switching server signs you out",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = p.text,
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(NuvaSpace.xs))
                     Text(
-                        text = "The server is open source. Paste the address it printed " +
-                            "on startup - a domain, or a Cloudflare tunnel URL like " +
-                            "calm-river-1234.trycloudflare.com.",
+                        text = "Accounts are not portable between servers, and tokens from " +
+                            "one server are meaningless on another. Changing the address " +
+                            "always clears the local session — never a surprise, always " +
+                            "stated up front.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = "github.com/nuva/nuva",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = p.textMuted,
                     )
                 }
             }
+
+            Spacer(Modifier.height(NuvaSpace.huge))
         }
     }
 }
