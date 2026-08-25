@@ -114,11 +114,11 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMeta(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"api_version":         APIVersion,
-		"build":               s.build,
-		"min_supported_app":   1,
-		"max_upload_bytes":    s.cfg.MaxUploadBytes,
-		"voice_max_seconds":   0, // 0 = no limit, unlike the Firebase days
-		"online_users":        s.hub.OnlineCount(),
+		"api_version":       APIVersion,
+		"build":             s.build,
+		"min_supported_app": 1,
+		"max_upload_bytes":  s.cfg.MaxUploadBytes,
+		"voice_max_seconds": 0, // 0 = no limit, unlike the Firebase days
+		"online_users":      s.hub.OnlineCount(),
 	})
 }

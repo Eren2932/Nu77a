@@ -180,8 +180,6 @@ func (s *Server) handleReaction(ctx context.Context, client *ws.Client, env ws.E
 		return
 	}
 
-	ctx := ctx
-
 	convoID, err := s.db.ConversationOfMessage(ctx, messageID)
 	if errors.Is(err, store.ErrNotFound) {
 		s.frameError(client, env, "message_not_found", "no such message")
