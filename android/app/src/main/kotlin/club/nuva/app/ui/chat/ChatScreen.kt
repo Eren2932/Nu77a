@@ -700,7 +700,6 @@ private fun Composer(
     }
 }
 
-private fun Modifier.heightIn(min = NuvaSize.composerMin): Modifier = this.then(Modifier.padding(0.dp))
 
 /**
  * Recording strip.
