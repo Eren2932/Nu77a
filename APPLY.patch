@@ -1,0 +1,1560 @@
+--- /tmp/base/Eren2932-Nu77a-f91a97c/android/app/src/main/kotlin/club/nuva/app/ui/theme/Tokens.kt	2026-08-25 17:20:00.000000000 +0000
++++ android/app/src/main/kotlin/club/nuva/app/ui/theme/Tokens.kt	2026-08-25 17:37:49.436061572 +0000
+@@ -94,32 +94,54 @@
+     val bubbleInText: Color,
+     /** Soft wash behind hero areas only. Never behind body text. */
+     val glow: Color,
++
++    // -- added in 4.0 -------------------------------------------------------
++    // All defaulted, so any existing NuvaPalette(...) call site still compiles.
++
++    /** Top of the outgoing-bubble gradient. Equals [bubbleOut] for a flat look. */
++    val bubbleOutTop: Color = bubbleOut,
++    /** Bottom of the outgoing-bubble gradient. */
++    val bubbleOutBottom: Color = bubbleOut,
++    /** Floating layers: context menus, reaction bars, sheets. Above [surface]. */
++    val surfaceRaised: Color = surfaceAlt,
++    /** Full-screen dim behind a focused message or a modal. */
++    val scrim: Color = Color(0x99000000),
++    /** Played portion of a voice waveform. */
++    val waveActive: Color = accent,
++    /** Unplayed portion of a voice waveform. */
++    val waveIdle: Color = textFaint,
+ )
+ 
+ internal val DarkPalette = NuvaPalette(
+     isDark = true,
+-    canvas = Color(0xFF0C0F12),
+-    surface = Color(0xFF14181C),
+-    surfaceAlt = Color(0xFF1C2126),
+-    surfaceSunken = Color(0xFF090B0D),
+-    hairline = Color(0xFF232A30),
+-    text = Color(0xFFECF1F4),
+-    textMuted = Color(0xFF8D9AA4),
+-    textFaint = Color(0xFF5D6A73),
+-    accent = Color(0xFF12B39A),
+-    accentSoft = Color(0xFF56D9C2),
+-    accentWash = Color(0x2412B39A),
+-    accentInk = Color(0xFF04140F),
+-    mint = Color(0xFF4ADE9B),
+-    amber = Color(0xFFE8A93C),
+-    iris = Color(0xFF7C7CF0),
+-    danger = Color(0xFFE4574C),
+-    coral = Color(0xFFE4574C),
+-    bubbleOut = Color(0xFF12B39A),
+-    bubbleOutText = Color(0xFF04140F),
+-    bubbleIn = Color(0xFF1C2126),
+-    bubbleInText = Color(0xFFECF1F4),
+-    glow = Color(0x3812B39A),
++    canvas = Color(0xFF070B14),
++    surface = Color(0xFF101827),
++    surfaceAlt = Color(0xFF1A2436),
++    surfaceSunken = Color(0xFF04070E),
++    hairline = Color(0xFF232F45),
++    text = Color(0xFFEDF2FA),
++    textMuted = Color(0xFF8797B0),
++    textFaint = Color(0xFF5B6981),
++    accent = Color(0xFF6C7CFF),
++    accentSoft = Color(0xFF9AA6FF),
++    accentWash = Color(0x266C7CFF),
++    accentInk = Color(0xFFFFFFFF),
++    mint = Color(0xFF3DD6A0),
++    amber = Color(0xFFF2B23E),
++    iris = Color(0xFFA56CFF),
++    danger = Color(0xFFFF5C6C),
++    coral = Color(0xFFFF5C6C),
++    bubbleOut = Color(0xFF6E5BF0),
++    bubbleOutText = Color(0xFFFFFFFF),
++    bubbleIn = Color(0xFF1A2436),
++    bubbleInText = Color(0xFFEDF2FA),
++    glow = Color(0x386E5BF0),
++    bubbleOutTop = Color(0xFF7B63F5),
++    bubbleOutBottom = Color(0xFF5B54E6),
++    surfaceRaised = Color(0xFF212C42),
++    scrim = Color(0xB3040710),
++    waveActive = Color(0xFFFFFFFF),
++    waveIdle = Color(0x66FFFFFF),
+ )
+ 
+ /**
+@@ -129,28 +151,34 @@
+  */
+ internal val LightPalette = NuvaPalette(
+     isDark = false,
+-    canvas = Color(0xFFF6F4F1),
++    canvas = Color(0xFFF4F6FB),
+     surface = Color(0xFFFFFFFF),
+-    surfaceAlt = Color(0xFFEDEAE5),
+-    surfaceSunken = Color(0xFFE7E3DC),
+-    hairline = Color(0xFFE0DCD5),
+-    text = Color(0xFF101418),
+-    textMuted = Color(0xFF5C6770),
+-    textFaint = Color(0xFF8A949C),
+-    accent = Color(0xFF0B8C79),
+-    accentSoft = Color(0xFF0E9C86),
+-    accentWash = Color(0x1F0B8C79),
++    surfaceAlt = Color(0xFFE9EDF6),
++    surfaceSunken = Color(0xFFE1E7F2),
++    hairline = Color(0xFFDCE3EF),
++    text = Color(0xFF0D1220),
++    textMuted = Color(0xFF57637A),
++    textFaint = Color(0xFF8794A8),
++    accent = Color(0xFF4B57D6),
++    accentSoft = Color(0xFF5A67E8),
++    accentWash = Color(0x1F4B57D6),
+     accentInk = Color(0xFFFFFFFF),
+-    mint = Color(0xFF12A06B),
+-    amber = Color(0xFFA9741A),
+-    iris = Color(0xFF5551D6),
+-    danger = Color(0xFFC93A30),
+-    coral = Color(0xFFC93A30),
+-    bubbleOut = Color(0xFF0B8C79),
++    mint = Color(0xFF0F9D6B),
++    amber = Color(0xFFB07714),
++    iris = Color(0xFF7B3FE4),
++    danger = Color(0xFFD33B49),
++    coral = Color(0xFFD33B49),
++    bubbleOut = Color(0xFF5A5FE0),
+     bubbleOutText = Color(0xFFFFFFFF),
+     bubbleIn = Color(0xFFFFFFFF),
+-    bubbleInText = Color(0xFF101418),
+-    glow = Color(0x1F0B8C79),
++    bubbleInText = Color(0xFF0D1220),
++    glow = Color(0x1F5A5FE0),
++    bubbleOutTop = Color(0xFF6A6FEA),
++    bubbleOutBottom = Color(0xFF4A50D2),
++    surfaceRaised = Color(0xFFFFFFFF),
++    scrim = Color(0x66101828),
++    waveActive = Color(0xFFFFFFFF),
++    waveIdle = Color(0x73FFFFFF),
+ )
+ 
+ internal fun darkScheme(p: NuvaPalette) = darkColorScheme(
+@@ -365,4 +393,24 @@
+ 
+     const val SPRING_STIFFNESS = 400f
+     const val SPRING_DAMPING = 0.85f
++
++    // -- added in 4.0 -------------------------------------------------------
++
++    /** A bubble landing in the list. Long enough to read, short enough to feel instant. */
++    const val BUBBLE_IN = 220
++
++    /** Reaction pop, check-mark flip, tiny state changes. */
++    const val MICRO = 130
++
++    /** Context menu / reaction bar opening over a dimmed chat. */
++    const val OVERLAY = 200
++
++    /** One waveform bar redraw while recording. Below this it looks like noise. */
++    const val WAVE_TICK = 60
++
++    /** Hold this long before a press becomes a voice recording. */
++    const val RECORD_HOLD_MS = 220L
++
++    /** Drag this far left to cancel a recording. */
++    const val CANCEL_SLIDE_DP = 96f
+ }
+--- /tmp/base/Eren2932-Nu77a-f91a97c/android/app/src/main/kotlin/club/nuva/app/data/local/ChatDatabase.kt	2026-08-25 17:20:00.000000000 +0000
++++ android/app/src/main/kotlin/club/nuva/app/data/local/ChatDatabase.kt	2026-08-25 17:47:02.981601745 +0000
+@@ -51,9 +51,42 @@
+         val text: String,
+         val sentAt: Long,
+         val delivery: String,
++        // -- added in schema v2 ---------------------------------------------
++        /** "text" or "voice". Defaults keep every v1 call site compiling. */
++        val kind: String = KIND_TEXT,
++        /** Server attachment id, empty until the upload has been accepted. */
++        val attachmentId: String = "",
++        /** Voice length in ms. 0 for text. */
++        val durationMs: Int = 0,
++        /** Comma-separated 0..100 bars. Empty for text. */
++        val waveform: String = "",
++        /**
++         * Absolute path to the audio on this device. Set the moment recording
++         * stops, so a voice note is playable before it has been uploaded and
++         * still playable offline afterwards.
++         */
++        val localPath: String = "",
+     )
+ 
++    /** One emoji left by one person on one message. */
++    data class ReactionRow(
++        val messageId: String,
++        val userId: String,
++        val emoji: String,
++        val reactedAt: Long,
++    )
++
++    /**
++     * A fresh install builds v1 and then runs every migration, exactly like an
++     * upgrading install does. This is the whole point: the two code paths
++     * cannot produce different schemas, because there is only one path.
++     */
+     override fun onCreate(db: SQLiteDatabase) {
++        createV1(db)
++        migrate(db, from = 1, to = VERSION)
++    }
++
++    private fun createV1(db: SQLiteDatabase) {
+         db.execSQL(
+             """
+             CREATE TABLE people (
+@@ -92,12 +125,44 @@
+         db.execSQL("CREATE INDEX idx_messages_convo ON messages (conversation_id, sent_at)")
+     }
+ 
++    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
++        migrate(db, from = oldVersion, to = newVersion)
++    }
++
+     /**
+-     * No upgrades yet. When the first one lands it goes here as an explicit
+-     * `if (oldVersion < 2) { ... }` block. Dropping tables on upgrade would
+-     * mean losing a user's history on an app update, which is unacceptable.
++     * Every migration is additive and runs inside a transaction. Nothing here
++     * drops a table or a column: losing a user's history on an app update is
++     * not a trade we make.
+      */
+-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
++    private fun migrate(db: SQLiteDatabase, from: Int, to: Int) {
++        if (from >= to) return
++
++        db.beginTransaction()
++        try {
++            if (from < 2) {
++                db.execSQL("ALTER TABLE messages ADD COLUMN kind TEXT NOT NULL DEFAULT '$KIND_TEXT'")
++                db.execSQL("ALTER TABLE messages ADD COLUMN attachment_id TEXT NOT NULL DEFAULT ''")
++                db.execSQL("ALTER TABLE messages ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0")
++                db.execSQL("ALTER TABLE messages ADD COLUMN waveform TEXT NOT NULL DEFAULT ''")
++                db.execSQL("ALTER TABLE messages ADD COLUMN local_path TEXT NOT NULL DEFAULT ''")
++                db.execSQL(
++                    """
++                    CREATE TABLE reactions (
++                        message_id TEXT NOT NULL,
++                        user_id TEXT NOT NULL,
++                        emoji TEXT NOT NULL,
++                        reacted_at INTEGER NOT NULL,
++                        PRIMARY KEY (message_id, user_id, emoji)
++                    )
++                    """.trimIndent(),
++                )
++                db.execSQL("CREATE INDEX idx_reactions_message ON reactions (message_id)")
++            }
++            db.setTransactionSuccessful()
++        } finally {
++            db.endTransaction()
++        }
++    }
+ 
+     override fun onConfigure(db: SQLiteDatabase) {
+         db.setForeignKeyConstraintsEnabled(false)
+@@ -208,6 +273,11 @@
+                     text = c.str("text"),
+                     sentAt = c.long("sent_at"),
+                     delivery = c.str("delivery"),
++                    kind = c.str("kind"),
++                    attachmentId = c.str("attachment_id"),
++                    durationMs = c.int("duration_ms"),
++                    waveform = c.str("waveform"),
++                    localPath = c.str("local_path"),
+                 )
+             }
+             out
+@@ -222,6 +292,11 @@
+             put("text", row.text)
+             put("sent_at", row.sentAt)
+             put("delivery", row.delivery)
++            put("kind", row.kind)
++            put("attachment_id", row.attachmentId)
++            put("duration_ms", row.durationMs)
++            put("waveform", row.waveform)
++            put("local_path", row.localPath)
+         }
+         writableDatabase.insertWithOnConflict(
+             "messages",
+@@ -237,6 +312,64 @@
+         writableDatabase.update("messages", values, "id = ?", arrayOf(messageId))
+     }
+ 
++    // -- reactions ----------------------------------------------------------
++
++    @Synchronized
++    fun reactions(): List<ReactionRow> = readableDatabase
++        .query("reactions", null, null, null, null, null, "reacted_at ASC")
++        .use { c ->
++            val out = ArrayList<ReactionRow>(c.count)
++            while (c.moveToNext()) {
++                out += ReactionRow(
++                    messageId = c.str("message_id"),
++                    userId = c.str("user_id"),
++                    emoji = c.str("emoji"),
++                    reactedAt = c.long("reacted_at"),
++                )
++            }
++            out
++        }
++
++    /** Idempotent: a double tap on a laggy connection must not be an error. */
++    @Synchronized
++    fun addReaction(row: ReactionRow) {
++        val values = ContentValues().apply {
++            put("message_id", row.messageId)
++            put("user_id", row.userId)
++            put("emoji", row.emoji)
++            put("reacted_at", row.reactedAt)
++        }
++        writableDatabase.insertWithOnConflict(
++            "reactions",
++            null,
++            values,
++            SQLiteDatabase.CONFLICT_REPLACE,
++        )
++    }
++
++    @Synchronized
++    fun removeReaction(messageId: String, userId: String, emoji: String) {
++        writableDatabase.delete(
++            "reactions",
++            "message_id = ? AND user_id = ? AND emoji = ?",
++            arrayOf(messageId, userId, emoji),
++        )
++    }
++
++    /**
++     * Called once the upload has been accepted: the row keeps its local audio
++     * path so playback keeps working, and gains the server id so other devices
++     * can fetch the same bytes.
++     */
++    @Synchronized
++    fun attachUpload(messageId: String, attachmentId: String, delivery: String) {
++        val values = ContentValues().apply {
++            put("attachment_id", attachmentId)
++            put("delivery", delivery)
++        }
++        writableDatabase.update("messages", values, "id = ?", arrayOf(messageId))
++    }
++
+     private fun Cursor.str(column: String): String =
+         getString(getColumnIndexOrThrow(column)) ?: ""
+ 
+@@ -246,6 +379,9 @@
+ 
+     companion object {
+         private const val NAME = "nuva-chat.db"
+-        private const val VERSION = 1
++        private const val VERSION = 2
++
++        const val KIND_TEXT = "text"
++        const val KIND_VOICE = "voice"
+     }
+ }
+--- /tmp/base/Eren2932-Nu77a-f91a97c/android/app/src/main/kotlin/club/nuva/app/data/remote/Dto.kt	2026-08-25 17:20:00.000000000 +0000
++++ android/app/src/main/kotlin/club/nuva/app/data/remote/Dto.kt	2026-08-25 17:50:34.675720497 +0000
+@@ -71,3 +71,67 @@
+     @Serializable
+     data class Body(val code: String = "unknown", val message: String = "")
+ }
++
++// ---------------------------------------------------------------------------
++// Media and reactions (4.0)
++// ---------------------------------------------------------------------------
++
++/** Reply from POST /v1/media. `url` is relative; prepend the server base. */
++@Serializable
++data class MediaDto(
++    val id: String,
++    val url: String,
++    val kind: String,
++    val mime: String,
++    val bytes: Long,
++    @SerialName("duration_ms") val durationMs: Int = 0,
++    val waveform: List<Int> = emptyList(),
++    /** True when the server already had these exact bytes. */
++    val reused: Boolean = false,
++)
++
++/** An attachment as embedded inside a message. */
++@Serializable
++data class AttachmentDto(
++    val id: String,
++    val kind: String,
++    val mime: String,
++    val bytes: Long,
++    @SerialName("duration_ms") val durationMs: Int = 0,
++    val waveform: List<Int> = emptyList(),
++)
++
++/**
++ * One collapsed reaction pill. `mine` is resolved per recipient by the server,
++ * so the client never has to scan the user list to know whether to highlight.
++ */
++@Serializable
++data class ReactionTallyDto(
++    val emoji: String,
++    val count: Int,
++    val mine: Boolean = false,
++    val users: List<String> = emptyList(),
++)
++
++/** Payload of a `reaction_relay` frame. Always the full tally, never a delta. */
++@Serializable
++data class ReactionRelayDto(
++    @SerialName("message_id") val messageId: String,
++    @SerialName("conversation_id") val conversationId: String,
++    val reactions: List<ReactionTallyDto> = emptyList(),
++)
++
++/** Payload of `send_voice`. The audio is uploaded over HTTP first. */
++@Serializable
++data class SendVoiceDto(
++    @SerialName("conversation_id") val conversationId: String,
++    @SerialName("client_id") val clientId: String,
++    @SerialName("attachment_id") val attachmentId: String,
++)
++
++/** Payload of `reaction_add` and `reaction_remove`. */
++@Serializable
++data class ReactionActionDto(
++    @SerialName("message_id") val messageId: String,
++    val emoji: String,
++)
+--- /tmp/base/Eren2932-Nu77a-f91a97c/android/gradle/libs.versions.toml	2026-08-25 17:20:00.000000000 +0000
++++ android/gradle/libs.versions.toml	2026-08-25 17:50:34.723720978 +0000
+@@ -18,6 +18,8 @@
+ androidxTestExt = "1.2.1"
+ espresso = "3.6.1"
+ 
++media3 = "1.4.1"
++
+ [libraries]
+ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+ androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+@@ -59,3 +61,5 @@
+ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
++androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
++androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "media3" }
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/store/migrations/0002_media_reactions.sql	2026-08-25 17:44:52.820299003 +0000
+@@ -0,0 +1,48 @@
++-- 0002_media_reactions.sql — voice messages, attachments and reactions.
++-- Never edit an applied migration: add a new numbered file instead.
++
++-- Content-addressed blobs. One row per distinct set of bytes, shared by every
++-- message that references it, so forwarding a voice note stores nothing new.
++CREATE TABLE attachments (
++    id           UUID PRIMARY KEY,
++    owner_id     UUID        REFERENCES users(id) ON DELETE SET NULL,
++    sha256       TEXT        NOT NULL,
++    kind         TEXT        NOT NULL CHECK (kind IN ('voice', 'image', 'video', 'file')),
++    mime         TEXT        NOT NULL,
++    bytes        BIGINT      NOT NULL CHECK (bytes > 0),
++
++    -- Voice only. Duration is authoritative for the UI: the client must not
++    -- have to download the audio to know how wide to draw the bubble.
++    duration_ms  INTEGER     NOT NULL DEFAULT 0 CHECK (duration_ms >= 0),
++
++    -- Coarse amplitude envelope, 0..100 per bar, produced by the recorder.
++    -- Deliberately NOT computed server-side: decoding audio in Go would drag
++    -- in a codec dependency and turn every upload into CPU work.
++    waveform     SMALLINT[]  NOT NULL DEFAULT '{}',
++
++    storage_path TEXT        NOT NULL,
++    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
++);
++
++-- Dedupe key. Two people uploading identical bytes reuse one row and one file.
++CREATE UNIQUE INDEX attachments_sha256_idx ON attachments(sha256);
++CREATE INDEX attachments_owner_idx ON attachments(owner_id);
++
++-- messages.kind already exists and has no CHECK, so 'voice' needs no change
++-- there. Only the link to the blob is new.
++ALTER TABLE messages ADD COLUMN attachment_id UUID REFERENCES attachments(id) ON DELETE SET NULL;
++
++CREATE INDEX messages_attachment_idx ON messages(attachment_id) WHERE attachment_id IS NOT NULL;
++
++-- One row per (message, user, emoji). The emoji is part of the key so a single
++-- user can leave several different reactions on one message, the way Discord
++-- and current Telegram both behave.
++CREATE TABLE reactions (
++    message_id UUID        NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
++    user_id    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++    emoji      TEXT        NOT NULL CHECK (char_length(emoji) BETWEEN 1 AND 16),
++    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
++    PRIMARY KEY (message_id, user_id, emoji)
++);
++
++CREATE INDEX reactions_message_idx ON reactions(message_id);
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/store/attachments.go	2026-08-25 17:44:52.820299003 +0000
+@@ -0,0 +1,98 @@
++package store
++
++import (
++	"context"
++	"errors"
++	"time"
++
++	"github.com/google/uuid"
++	"github.com/jackc/pgx/v5"
++)
++
++// Attachment is a stored blob. The bytes themselves live on disk under
++// Config.MediaDir; this row is the only thing that knows where.
++type Attachment struct {
++	ID          uuid.UUID `json:"id"`
++	OwnerID     uuid.UUID `json:"owner_id"`
++	SHA256      string    `json:"sha256"`
++	Kind        string    `json:"kind"`
++	Mime        string    `json:"mime"`
++	Bytes       int64     `json:"bytes"`
++	DurationMs  int32     `json:"duration_ms"`
++	Waveform    []int16   `json:"waveform"`
++	StoragePath string    `json:"-"`
++	CreatedAt   time.Time `json:"created_at"`
++}
++
++const attachmentColumns = `id, owner_id, sha256, kind, mime, bytes,
++	duration_ms, waveform, storage_path, created_at`
++
++func scanAttachment(row pgx.Row) (Attachment, error) {
++	var a Attachment
++	var owner *uuid.UUID
++	err := row.Scan(&a.ID, &owner, &a.SHA256, &a.Kind, &a.Mime, &a.Bytes,
++		&a.DurationMs, &a.Waveform, &a.StoragePath, &a.CreatedAt)
++	if errors.Is(err, pgx.ErrNoRows) {
++		return a, ErrNotFound
++	}
++	if owner != nil {
++		a.OwnerID = *owner
++	}
++	if a.Waveform == nil {
++		a.Waveform = []int16{}
++	}
++	return a, err
++}
++
++type CreateAttachmentParams struct {
++	OwnerID     uuid.UUID
++	SHA256      string
++	Kind        string
++	Mime        string
++	Bytes       int64
++	DurationMs  int32
++	Waveform    []int16
++	StoragePath string
++}
++
++// PutAttachment inserts the blob, or returns the existing row when these exact
++// bytes are already stored. The caller can then delete its temp file.
++//
++// Returns reused=true when nothing was inserted, so the handler knows not to
++// keep the file it just wrote.
++func (s *Store) PutAttachment(ctx context.Context, p CreateAttachmentParams) (a Attachment, reused bool, err error) {
++	if p.Waveform == nil {
++		p.Waveform = []int16{}
++	}
++
++	row := s.Pool.QueryRow(ctx, `
++		INSERT INTO attachments
++			(id, owner_id, sha256, kind, mime, bytes, duration_ms, waveform, storage_path)
++		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
++		ON CONFLICT (sha256) DO NOTHING
++		RETURNING `+attachmentColumns,
++		uuid.New(), p.OwnerID, p.SHA256, p.Kind, p.Mime, p.Bytes,
++		p.DurationMs, p.Waveform, p.StoragePath)
++
++	a, err = scanAttachment(row)
++	if err == nil {
++		return a, false, nil
++	}
++	if !errors.Is(err, ErrNotFound) {
++		return Attachment{}, false, err
++	}
++
++	// ON CONFLICT DO NOTHING returned no row: the blob already exists.
++	a, err = s.AttachmentBySHA256(ctx, p.SHA256)
++	return a, true, err
++}
++
++func (s *Store) AttachmentByID(ctx context.Context, id uuid.UUID) (Attachment, error) {
++	return scanAttachment(s.Pool.QueryRow(ctx,
++		`SELECT `+attachmentColumns+` FROM attachments WHERE id = $1`, id))
++}
++
++func (s *Store) AttachmentBySHA256(ctx context.Context, sum string) (Attachment, error) {
++	return scanAttachment(s.Pool.QueryRow(ctx,
++		`SELECT `+attachmentColumns+` FROM attachments WHERE sha256 = $1`, sum))
++}
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/store/reactions.go	2026-08-25 17:44:52.824299043 +0000
+@@ -0,0 +1,71 @@
++package store
++
++import (
++	"context"
++
++	"github.com/google/uuid"
++)
++
++// Reaction is one emoji left by one user on one message.
++type Reaction struct {
++	MessageID uuid.UUID `json:"message_id"`
++	UserID    uuid.UUID `json:"user_id"`
++	Emoji     string    `json:"emoji"`
++}
++
++// ReactionTally is the collapsed form the UI actually draws: one pill per
++// emoji, with a count and whether the current viewer is part of it.
++type ReactionTally struct {
++	Emoji string      `json:"emoji"`
++	Count int         `json:"count"`
++	Mine  bool        `json:"mine"`
++	Users []uuid.UUID `json:"users"`
++}
++
++// AddReaction is idempotent: reacting twice with the same emoji is a no-op
++// rather than an error, because a double tap on a laggy connection is normal.
++func (s *Store) AddReaction(ctx context.Context, messageID, userID uuid.UUID, emoji string) error {
++	_, err := s.Pool.Exec(ctx, `
++		INSERT INTO reactions (message_id, user_id, emoji)
++		VALUES ($1, $2, $3)
++		ON CONFLICT (message_id, user_id, emoji) DO NOTHING`,
++		messageID, userID, emoji)
++	return err
++}
++
++// RemoveReaction is also idempotent, for the same reason.
++func (s *Store) RemoveReaction(ctx context.Context, messageID, userID uuid.UUID, emoji string) error {
++	_, err := s.Pool.Exec(ctx,
++		`DELETE FROM reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3`,
++		messageID, userID, emoji)
++	return err
++}
++
++// ReactionsFor returns the tallies for one message, most popular first, with
++// `Mine` resolved for viewerID.
++func (s *Store) ReactionsFor(ctx context.Context, messageID, viewerID uuid.UUID) ([]ReactionTally, error) {
++	rows, err := s.Pool.Query(ctx, `
++		SELECT emoji,
++		       count(*)::int                                AS count,
++		       bool_or(user_id = $2)                        AS mine,
++		       array_agg(user_id ORDER BY created_at)       AS users
++		FROM reactions
++		WHERE message_id = $1
++		GROUP BY emoji
++		ORDER BY count(*) DESC, min(created_at) ASC`,
++		messageID, viewerID)
++	if err != nil {
++		return nil, err
++	}
++	defer rows.Close()
++
++	out := make([]ReactionTally, 0, 8)
++	for rows.Next() {
++		var t ReactionTally
++		if err := rows.Scan(&t.Emoji, &t.Count, &t.Mine, &t.Users); err != nil {
++			return nil, err
++		}
++		out = append(out, t)
++	}
++	return out, rows.Err()
++}
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/store/conversations.go	2026-08-25 17:48:32.054493242 +0000
+@@ -0,0 +1,52 @@
++package store
++
++import (
++	"context"
++
++	"github.com/google/uuid"
++)
++
++// MemberIDs returns every user in a conversation. This is the fan-out list for
++// anything realtime: a new message, a reaction, a typing indicator.
++func (s *Store) MemberIDs(ctx context.Context, conversationID uuid.UUID) ([]uuid.UUID, error) {
++	rows, err := s.Pool.Query(ctx,
++		`SELECT user_id FROM conversation_members WHERE conversation_id = $1`, conversationID)
++	if err != nil {
++		return nil, err
++	}
++	defer rows.Close()
++
++	out := make([]uuid.UUID, 0, 8)
++	for rows.Next() {
++		var id uuid.UUID
++		if err := rows.Scan(&id); err != nil {
++			return nil, err
++		}
++		out = append(out, id)
++	}
++	return out, rows.Err()
++}
++
++// IsMember gates every conversation-scoped action. Checked on the server for
++// every frame: a client that lies about its conversation id gets nothing.
++func (s *Store) IsMember(ctx context.Context, conversationID, userID uuid.UUID) (bool, error) {
++	var exists bool
++	err := s.Pool.QueryRow(ctx, `
++		SELECT EXISTS (
++			SELECT 1 FROM conversation_members
++			WHERE conversation_id = $1 AND user_id = $2
++		)`, conversationID, userID).Scan(&exists)
++	return exists, err
++}
++
++// ConversationOfMessage is what a reaction frame needs: reactions carry only a
++// message id, but the fan-out list is per conversation.
++func (s *Store) ConversationOfMessage(ctx context.Context, messageID uuid.UUID) (uuid.UUID, error) {
++	var id uuid.UUID
++	err := s.Pool.QueryRow(ctx,
++		`SELECT conversation_id FROM messages WHERE id = $1`, messageID).Scan(&id)
++	if err != nil {
++		return uuid.Nil, mapNoRows(err)
++	}
++	return id, nil
++}
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/store/messages.go	2026-08-25 17:48:32.054493242 +0000
+@@ -0,0 +1,189 @@
++package store
++
++import (
++	"context"
++	"errors"
++	"time"
++
++	"github.com/google/uuid"
++	"github.com/jackc/pgx/v5"
++)
++
++// Message is one row of a conversation. A voice note is a Message with
++// Kind == "voice" and an Attachment hanging off it; there is no separate
++// "voice message" type, so every feature that works on messages (reply,
++// forward, delete, reactions) works on voice for free.
++type Message struct {
++	ID             uuid.UUID   `json:"id"`
++	ConversationID uuid.UUID   `json:"conversation_id"`
++	SenderID       uuid.UUID   `json:"sender_id"`
++	Seq            int64       `json:"seq"`
++	ClientID       string      `json:"client_id"`
++	Kind           string      `json:"kind"`
++	Body           string      `json:"body"`
++	AttachmentID   *uuid.UUID  `json:"attachment_id,omitempty"`
++	Attachment     *Attachment `json:"attachment,omitempty"`
++	CreatedAt      time.Time   `json:"created_at"`
++	EditedAt       *time.Time  `json:"edited_at,omitempty"`
++}
++
++type CreateMessageParams struct {
++	ConversationID uuid.UUID
++	SenderID       uuid.UUID
++	ClientID       string
++	Kind           string
++	Body           string
++	AttachmentID   *uuid.UUID
++}
++
++func mapNoRows(err error) error {
++	if errors.Is(err, pgx.ErrNoRows) {
++		return ErrNotFound
++	}
++	return err
++}
++
++// CreateMessage assigns the next per-conversation sequence number and inserts
++// the row.
++//
++// The conversation row is locked FOR UPDATE first, which serialises concurrent
++// senders. Without it two clients can read the same max(seq) and collide on
++// the UNIQUE (conversation_id, seq) index. Doing it in one statement with a
++// sub-select would have the same race, just harder to see.
++//
++// Resending the same client_id returns the existing row instead of a duplicate,
++// so a retry after a dropped socket is safe.
++func (s *Store) CreateMessage(ctx context.Context, p CreateMessageParams) (Message, error) {
++	tx, err := s.Pool.Begin(ctx)
++	if err != nil {
++		return Message{}, err
++	}
++	defer func() { _ = tx.Rollback(ctx) }()
++
++	var locked uuid.UUID
++	err = tx.QueryRow(ctx,
++		`SELECT id FROM conversations WHERE id = $1 FOR UPDATE`, p.ConversationID).Scan(&locked)
++	if err != nil {
++		return Message{}, mapNoRows(err)
++	}
++
++	var next int64
++	if err := tx.QueryRow(ctx,
++		`SELECT coalesce(max(seq), 0) + 1 FROM messages WHERE conversation_id = $1`,
++		p.ConversationID).Scan(&next); err != nil {
++		return Message{}, err
++	}
++
++	var m Message
++	err = tx.QueryRow(ctx, `
++		INSERT INTO messages
++			(id, conversation_id, sender_id, seq, client_id, kind, body, attachment_id)
++		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
++		ON CONFLICT (conversation_id, sender_id, client_id) DO NOTHING
++		RETURNING id, conversation_id, sender_id, seq, client_id, kind, body,
++		          attachment_id, created_at, edited_at`,
++		uuid.New(), p.ConversationID, p.SenderID, next, p.ClientID, p.Kind, p.Body, p.AttachmentID,
++	).Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Seq, &m.ClientID, &m.Kind, &m.Body,
++		&m.AttachmentID, &m.CreatedAt, &m.EditedAt)
++
++	if errors.Is(err, pgx.ErrNoRows) {
++		// Same client_id as before: this is a retry, not a new message.
++		if err := tx.Commit(ctx); err != nil {
++			return Message{}, err
++		}
++		return s.MessageByClientID(ctx, p.ConversationID, p.SenderID, p.ClientID)
++	}
++	if err != nil {
++		return Message{}, err
++	}
++
++	if _, err := tx.Exec(ctx,
++		`UPDATE conversations SET updated_at = now() WHERE id = $1`, p.ConversationID); err != nil {
++		return Message{}, err
++	}
++	if err := tx.Commit(ctx); err != nil {
++		return Message{}, err
++	}
++	return s.hydrate(ctx, m)
++}
++
++const messageColumns = `id, conversation_id, sender_id, seq, client_id, kind, body,
++	attachment_id, created_at, edited_at`
++
++func scanMessage(row pgx.Row) (Message, error) {
++	var m Message
++	err := row.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Seq, &m.ClientID,
++		&m.Kind, &m.Body, &m.AttachmentID, &m.CreatedAt, &m.EditedAt)
++	return m, mapNoRows(err)
++}
++
++func (s *Store) MessageByClientID(ctx context.Context, convoID, senderID uuid.UUID, clientID string) (Message, error) {
++	m, err := scanMessage(s.Pool.QueryRow(ctx,
++		`SELECT `+messageColumns+` FROM messages
++		 WHERE conversation_id = $1 AND sender_id = $2 AND client_id = $3`,
++		convoID, senderID, clientID))
++	if err != nil {
++		return m, err
++	}
++	return s.hydrate(ctx, m)
++}
++
++// Messages returns one page of history, newest first. `before` is a seq
++// cursor; pass 0 for the most recent page.
++func (s *Store) Messages(ctx context.Context, convoID uuid.UUID, before int64, limit int) ([]Message, error) {
++	if limit <= 0 || limit > 200 {
++		limit = 50
++	}
++	if before <= 0 {
++		before = 1 << 62
++	}
++
++	rows, err := s.Pool.Query(ctx,
++		`SELECT `+messageColumns+` FROM messages
++		 WHERE conversation_id = $1 AND seq < $2 AND deleted_at IS NULL
++		 ORDER BY seq DESC LIMIT $3`,
++		convoID, before, limit)
++	if err != nil {
++		return nil, err
++	}
++	defer rows.Close()
++
++	out := make([]Message, 0, limit)
++	for rows.Next() {
++		var m Message
++		if err := rows.Scan(&m.ID, &m.ConversationID, &m.SenderID, &m.Seq, &m.ClientID,
++			&m.Kind, &m.Body, &m.AttachmentID, &m.CreatedAt, &m.EditedAt); err != nil {
++			return nil, err
++		}
++		out = append(out, m)
++	}
++	if err := rows.Err(); err != nil {
++		return nil, err
++	}
++
++	for i := range out {
++		hydrated, err := s.hydrate(ctx, out[i])
++		if err != nil {
++			return nil, err
++		}
++		out[i] = hydrated
++	}
++	return out, nil
++}
++
++// hydrate fills in the attachment so the client never has to make a second
++// call just to learn how long a voice note is.
++func (s *Store) hydrate(ctx context.Context, m Message) (Message, error) {
++	if m.AttachmentID == nil {
++		return m, nil
++	}
++	att, err := s.AttachmentByID(ctx, *m.AttachmentID)
++	if errors.Is(err, ErrNotFound) {
++		return m, nil
++	}
++	if err != nil {
++		return m, err
++	}
++	m.Attachment = &att
++	return m, nil
++}
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/api/handlers_media.go	2026-08-25 17:46:05.541026842 +0000
+@@ -0,0 +1,319 @@
++package api
++
++import (
++	"crypto/sha256"
++	"encoding/hex"
++	"errors"
++	"fmt"
++	"io"
++	"net/http"
++	"os"
++	"path/filepath"
++	"strconv"
++	"strings"
++
++	"github.com/google/uuid"
++
++	"github.com/nuva/server/internal/store"
++)
++
++// How much of a multipart form we are willing to buffer in RAM. Anything
++// larger spills to the OS temp dir, which is what we want for audio.
++const multipartMemory = 8 << 20 // 8 MiB
++
++// A voice note is capped well below the generic upload limit. Ten minutes of
++// Opus at 32 kbps is about 2.4 MB, so 16 MB leaves a wide margin while still
++// making an accidental hour-long recording fail fast.
++const maxVoiceBytes = 16 << 20
++
++// maxWaveformBars is the widest envelope the UI can draw. More bars than this
++// is wasted bytes on the wire, so we reject rather than silently truncate.
++const maxWaveformBars = 256
++
++// mimeByKind is an allowlist, not a blocklist. Anything not named here is
++// refused, so a new file type is always a deliberate decision.
++var mimeByKind = map[string]map[string]string{
++	"voice": {
++		"audio/ogg":  ".ogg",
++		"audio/opus": ".opus",
++		"audio/mp4":  ".m4a",
++		"audio/aac":  ".aac",
++		"audio/mpeg": ".mp3",
++	},
++	"image": {
++		"image/jpeg": ".jpg",
++		"image/png":  ".png",
++		"image/webp": ".webp",
++	},
++}
++
++// mediaResponse is what the client gets back and then quotes verbatim in the
++// send_voice frame. Nothing here is secret, so it is safe to cache.
++type mediaResponse struct {
++	ID         string  `json:"id"`
++	URL        string  `json:"url"`
++	Kind       string  `json:"kind"`
++	Mime       string  `json:"mime"`
++	Bytes      int64   `json:"bytes"`
++	DurationMs int32   `json:"duration_ms"`
++	Waveform   []int16 `json:"waveform"`
++	Reused     bool    `json:"reused"`
++}
++
++// handleUploadMedia accepts one multipart file and stores it content-addressed.
++//
++// Form fields:
++//
++//	file        the bytes            (required)
++//	kind        voice | image        (required)
++//	duration_ms integer, voice only  (required for voice)
++//	waveform    comma-separated 0..100 ints, voice only
++//
++// The audio is never decoded here on purpose: the recorder already knows the
++// duration and the envelope, and adding a codec to the server would make every
++// upload cost CPU and add a dependency we would have to keep patched.
++func (s *Server) handleUploadMedia(w http.ResponseWriter, r *http.Request) {
++	userID, ok := UserIDFrom(r.Context())
++	if !ok {
++		writeError(w, http.StatusUnauthorized, "invalid_token", "token is invalid")
++		return
++	}
++
++	limit := s.cfg.MaxUploadBytes
++	if limit <= 0 {
++		limit = maxVoiceBytes
++	}
++	// +1 so a file exactly on the limit is accepted and one byte over is not.
++	r.Body = http.MaxBytesReader(w, r.Body, limit+1)
++
++	if err := r.ParseMultipartForm(multipartMemory); err != nil {
++		var tooLarge *http.MaxBytesError
++		if errors.As(err, &tooLarge) {
++			writeError(w, http.StatusRequestEntityTooLarge, "file_too_large",
++				fmt.Sprintf("upload must be at most %d bytes", limit))
++			return
++		}
++		writeError(w, http.StatusBadRequest, "invalid_body", "expected a multipart/form-data upload")
++		return
++	}
++	defer func() { _ = r.MultipartForm.RemoveAll() }()
++
++	kind := strings.TrimSpace(r.FormValue("kind"))
++	allowed, known := mimeByKind[kind]
++	if !known {
++		writeError(w, http.StatusUnprocessableEntity, "invalid_kind", "kind must be one of: voice, image")
++		return
++	}
++
++	file, header, err := r.FormFile("file")
++	if err != nil {
++		writeError(w, http.StatusBadRequest, "missing_file", "form field 'file' is required")
++		return
++	}
++	defer func() { _ = file.Close() }()
++
++	mime := normalizeMime(header.Header.Get("Content-Type"))
++	ext, mimeOK := allowed[mime]
++	if !mimeOK {
++		writeError(w, http.StatusUnsupportedMediaType, "unsupported_mime",
++			fmt.Sprintf("%q is not an accepted content type for kind %q", mime, kind))
++		return
++	}
++
++	if kind == "voice" && limit > maxVoiceBytes {
++		limit = maxVoiceBytes
++	}
++
++	durationMs, waveform, verr := parseVoiceFields(r, kind)
++	if verr != "" {
++		writeError(w, http.StatusUnprocessableEntity, "invalid_voice_metadata", verr)
++		return
++	}
++
++	// Stream to a temp file while hashing, so a large upload never sits in RAM
++	// and we learn the digest without a second pass over the bytes.
++	tmp, err := os.CreateTemp(s.cfg.MediaDir, ".upload-*")
++	if err != nil {
++		// Most likely the media dir does not exist or is not writable, which is
++		// a deployment problem worth its own log line.
++		s.internalError(w, "create temp upload file", err)
++		return
++	}
++	tmpPath := tmp.Name()
++	// Removed unless we deliberately keep the file below.
++	keep := false
++	defer func() {
++		_ = tmp.Close()
++		if !keep {
++			_ = os.Remove(tmpPath)
++		}
++	}()
++
++	digest := sha256.New()
++	written, err := io.Copy(io.MultiWriter(tmp, digest), io.LimitReader(file, limit+1))
++	if err != nil {
++		var tooLarge *http.MaxBytesError
++		if errors.As(err, &tooLarge) {
++			writeError(w, http.StatusRequestEntityTooLarge, "file_too_large",
++				fmt.Sprintf("upload must be at most %d bytes", limit))
++			return
++		}
++		s.internalError(w, "buffer upload", err)
++		return
++	}
++	if written == 0 {
++		writeError(w, http.StatusUnprocessableEntity, "empty_file", "the uploaded file is empty")
++		return
++	}
++	if written > limit {
++		writeError(w, http.StatusRequestEntityTooLarge, "file_too_large",
++			fmt.Sprintf("upload must be at most %d bytes", limit))
++		return
++	}
++	if err := tmp.Sync(); err != nil {
++		s.internalError(w, "flush upload", err)
++		return
++	}
++
++	sum := hex.EncodeToString(digest.Sum(nil))
++	relPath := shardedPath(kind, sum, ext)
++	absPath := filepath.Join(s.cfg.MediaDir, relPath)
++
++	if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
++		s.internalError(w, "create media directory", err)
++		return
++	}
++	if err := os.Rename(tmpPath, absPath); err != nil {
++		s.internalError(w, "move upload into place", err)
++		return
++	}
++	keep = true
++
++	att, reused, err := s.db.PutAttachment(r.Context(), store.CreateAttachmentParams{
++		OwnerID:     userID,
++		SHA256:      sum,
++		Kind:        kind,
++		Mime:        mime,
++		Bytes:       written,
++		DurationMs:  durationMs,
++		Waveform:    waveform,
++		StoragePath: relPath,
++	})
++	if err != nil {
++		// The row failed but the file is on disk. Remove it so a retry is clean
++		// rather than leaving an orphan nothing will ever reference.
++		_ = os.Remove(absPath)
++		s.internalError(w, "record attachment", err)
++		return
++	}
++
++	writeJSON(w, http.StatusCreated, mediaResponse{
++		ID:         att.ID.String(),
++		URL:        "/" + APIVersion + "/media/" + att.ID.String(),
++		Kind:       att.Kind,
++		Mime:       att.Mime,
++		Bytes:      att.Bytes,
++		DurationMs: att.DurationMs,
++		Waveform:   att.Waveform,
++		Reused:     reused,
++	})
++}
++
++// handleGetMedia streams a stored blob back. Auth is required: media URLs are
++// not secret, but they are also not public, and http.ServeContent gives us
++// range requests for free, which is what makes seeking in a voice note work.
++func (s *Server) handleGetMedia(w http.ResponseWriter, r *http.Request) {
++	id, err := uuid.Parse(chiURLParam(r, "id"))
++	if err != nil {
++		writeError(w, http.StatusBadRequest, "invalid_id", "media id is not a uuid")
++		return
++	}
++
++	att, err := s.db.AttachmentByID(r.Context(), id)
++	if errors.Is(err, store.ErrNotFound) {
++		writeError(w, http.StatusNotFound, "media_not_found", "no media with this id")
++		return
++	}
++	if err != nil {
++		s.internalError(w, "load attachment", err)
++		return
++	}
++
++	// Join through filepath.Clean and re-check the prefix: storage_path comes
++	// from our own writer, but a path traversal here would be catastrophic, so
++	// it is verified rather than trusted.
++	abs := filepath.Join(s.cfg.MediaDir, filepath.Clean("/"+att.StoragePath))
++	if !strings.HasPrefix(abs, filepath.Clean(s.cfg.MediaDir)+string(os.PathSeparator)) {
++		s.internalError(w, "media path escaped media dir", errors.New(att.StoragePath))
++		return
++	}
++
++	f, err := os.Open(abs)
++	if err != nil {
++		s.internalError(w, "open media file", err)
++		return
++	}
++	defer func() { _ = f.Close() }()
++
++	info, err := f.Stat()
++	if err != nil {
++		s.internalError(w, "stat media file", err)
++		return
++	}
++
++	w.Header().Set("Content-Type", att.Mime)
++	// Content-addressed, so the bytes behind an id can never change.
++	w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
++	w.Header().Set("ETag", `"`+att.SHA256+`"`)
++	http.ServeContent(w, r, filepath.Base(abs), info.ModTime(), f)
++}
++
++// parseVoiceFields validates the two voice-only form fields. Returns a
++// human-readable reason on failure, empty string on success.
++func parseVoiceFields(r *http.Request, kind string) (int32, []int16, string) {
++	if kind != "voice" {
++		return 0, []int16{}, ""
++	}
++
++	raw := strings.TrimSpace(r.FormValue("duration_ms"))
++	if raw == "" {
++		return 0, nil, "duration_ms is required for a voice upload"
++	}
++	ms, err := strconv.ParseInt(raw, 10, 32)
++	if err != nil || ms <= 0 {
++		return 0, nil, "duration_ms must be a positive integer"
++	}
++
++	waveform := make([]int16, 0, maxWaveformBars)
++	for _, part := range strings.Split(r.FormValue("waveform"), ",") {
++		part = strings.TrimSpace(part)
++		if part == "" {
++			continue
++		}
++		v, err := strconv.Atoi(part)
++		if err != nil || v < 0 || v > 100 {
++			return 0, nil, "waveform must be comma-separated integers in 0..100"
++		}
++		waveform = append(waveform, int16(v))
++		if len(waveform) > maxWaveformBars {
++			return 0, nil, fmt.Sprintf("waveform must have at most %d bars", maxWaveformBars)
++		}
++	}
++
++	return int32(ms), waveform, ""
++}
++
++// normalizeMime drops any parameters, so "audio/ogg; codecs=opus" matches the
++// allowlist key "audio/ogg".
++func normalizeMime(raw string) string {
++	if i := strings.IndexByte(raw, ';'); i >= 0 {
++		raw = raw[:i]
++	}
++	return strings.ToLower(strings.TrimSpace(raw))
++}
++
++// shardedPath spreads files over 256 directories so no single directory ever
++// holds a million entries, which some filesystems handle very badly.
++func shardedPath(kind, sum, ext string) string {
++	return filepath.Join(kind, sum[0:2], sum[2:4], sum+ext)
++}
+--- /dev/null	2026-08-25 14:12:27.469787715 +0000
++++ server/internal/api/handlers_ws_chat.go	2026-08-25 17:50:12.423497783 +0000
+@@ -0,0 +1,251 @@
++package api
++
++import (
++	"context"
++	"encoding/json"
++	"errors"
++	"strings"
++
++	"github.com/google/uuid"
++
++	"github.com/nuva/server/internal/store"
++	"github.com/nuva/server/internal/ws"
++)
++
++// Inbound payloads. Each is validated before it touches the database: a socket
++// is an unauthenticated-shaped channel even when the connection is authorised.
++
++type sendTextPayload struct {
++	ConversationID string `json:"conversation_id"`
++	ClientID       string `json:"client_id"`
++	Body           string `json:"body"`
++}
++
++type sendVoicePayload struct {
++	ConversationID string `json:"conversation_id"`
++	ClientID       string `json:"client_id"`
++	// Id returned by POST /v1/media. The audio itself never crosses this socket.
++	AttachmentID string `json:"attachment_id"`
++}
++
++type reactionPayload struct {
++	MessageID string `json:"message_id"`
++	Emoji     string `json:"emoji"`
++}
++
++const (
++	maxBodyRunes  = 4096
++	maxEmojiRunes = 8
++)
++
++func (s *Server) handleSendText(ctx context.Context, client *ws.Client, env ws.Envelope) {
++	var p sendTextPayload
++	if !s.decodeFrame(client, env, &p) {
++		return
++	}
++
++	body := strings.TrimSpace(p.Body)
++	if body == "" {
++		s.frameError(client, env, "empty_body", "a text message cannot be empty")
++		return
++	}
++	if len([]rune(body)) > maxBodyRunes {
++		s.frameError(client, env, "body_too_long", "a message must be at most 4096 characters")
++		return
++	}
++
++	s.persistAndRelay(ctx, client, env, store.CreateMessageParams{
++		ClientID: p.ClientID,
++		Kind:     "text",
++		Body:     body,
++	}, p.ConversationID)
++}
++
++func (s *Server) handleSendVoice(ctx context.Context, client *ws.Client, env ws.Envelope) {
++	var p sendVoicePayload
++	if !s.decodeFrame(client, env, &p) {
++		return
++	}
++
++	attachmentID, err := uuid.Parse(p.AttachmentID)
++	if err != nil {
++		s.frameError(client, env, "invalid_attachment", "attachment_id is not a uuid")
++		return
++	}
++
++	att, err := s.db.AttachmentByID(ctx, attachmentID)
++	if errors.Is(err, store.ErrNotFound) {
++		s.frameError(client, env, "attachment_not_found", "upload the audio before sending it")
++		return
++	}
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not load the attachment")
++		return
++	}
++	if att.Kind != "voice" {
++		s.frameError(client, env, "wrong_attachment_kind", "this attachment is not a voice note")
++		return
++	}
++	// Only the uploader may attach it, so a guessed id cannot be re-sent by
++	// someone who never had the audio.
++	if att.OwnerID != client.UserID {
++		s.frameError(client, env, "not_your_attachment", "this attachment belongs to someone else")
++		return
++	}
++
++	s.persistAndRelay(ctx, client, env, store.CreateMessageParams{
++		ClientID:     p.ClientID,
++		Kind:         "voice",
++		Body:         "",
++		AttachmentID: &attachmentID,
++	}, p.ConversationID)
++}
++
++// persistAndRelay is the shared tail of send_text and send_voice: check
++// membership, write the row, then fan out to everyone in the conversation.
++func (s *Server) persistAndRelay(
++	ctx context.Context,
++	client *ws.Client,
++	env ws.Envelope,
++	params store.CreateMessageParams,
++	rawConversationID string,
++) {
++	convoID, err := uuid.Parse(rawConversationID)
++	if err != nil {
++		s.frameError(client, env, "invalid_conversation", "conversation_id is not a uuid")
++		return
++	}
++	if strings.TrimSpace(params.ClientID) == "" {
++		s.frameError(client, env, "missing_client_id", "client_id is required so retries are safe")
++		return
++	}
++
++	member, err := s.db.IsMember(ctx, convoID, client.UserID)
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not verify membership")
++		return
++	}
++	if !member {
++		// Same answer as a conversation that does not exist: never confirm the
++		// existence of a room the caller is not in.
++		s.frameError(client, env, "conversation_not_found", "no such conversation")
++		return
++	}
++
++	params.ConversationID = convoID
++	params.SenderID = client.UserID
++
++	msg, err := s.db.CreateMessage(ctx, params)
++	if errors.Is(err, store.ErrNotFound) {
++		s.frameError(client, env, "conversation_not_found", "no such conversation")
++		return
++	}
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not store the message")
++		return
++	}
++
++	members, err := s.db.MemberIDs(ctx, convoID)
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not resolve recipients")
++		return
++	}
++
++	out, err := ws.NewEnvelope(ws.TypeMessageNew, env.ID, msg)
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not encode the message")
++		return
++	}
++	// The sender is in `members`, so the ack and the broadcast are the same
++	// frame. One code path means the sender's copy can never drift from what
++	// everyone else received.
++	_ = s.hub.SendJSONToUsers(members, out)
++}
++
++func (s *Server) handleReaction(ctx context.Context, client *ws.Client, env ws.Envelope, add bool) {
++	var p reactionPayload
++	if !s.decodeFrame(client, env, &p) {
++		return
++	}
++
++	messageID, err := uuid.Parse(p.MessageID)
++	if err != nil {
++		s.frameError(client, env, "invalid_message", "message_id is not a uuid")
++		return
++	}
++
++	emoji := strings.TrimSpace(p.Emoji)
++	if emoji == "" || len([]rune(emoji)) > maxEmojiRunes {
++		s.frameError(client, env, "invalid_emoji", "emoji must be 1-8 characters")
++		return
++	}
++
++	ctx := ctx
++
++	convoID, err := s.db.ConversationOfMessage(ctx, messageID)
++	if errors.Is(err, store.ErrNotFound) {
++		s.frameError(client, env, "message_not_found", "no such message")
++		return
++	}
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not load the message")
++		return
++	}
++
++	member, err := s.db.IsMember(ctx, convoID, client.UserID)
++	if err != nil || !member {
++		s.frameError(client, env, "message_not_found", "no such message")
++		return
++	}
++
++	if add {
++		err = s.db.AddReaction(ctx, messageID, client.UserID, emoji)
++	} else {
++		err = s.db.RemoveReaction(ctx, messageID, client.UserID, emoji)
++	}
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not save the reaction")
++		return
++	}
++
++	members, err := s.db.MemberIDs(ctx, convoID)
++	if err != nil {
++		s.frameError(client, env, "internal_error", "could not resolve recipients")
++		return
++	}
++
++	// The relay carries the full tally, not a delta. A client that missed a
++	// frame while backgrounded still ends up with the correct counts, which is
++	// much cheaper than a reconciliation protocol.
++	for _, uid := range members {
++		tallies, err := s.db.ReactionsFor(ctx, messageID, uid)
++		if err != nil {
++			continue
++		}
++		frame, err := ws.NewEnvelope(ws.TypeReactionRelay, "", map[string]any{
++			"message_id":      messageID.String(),
++			"conversation_id": convoID.String(),
++			"reactions":       tallies,
++		})
++		if err != nil {
++			continue
++		}
++		_ = s.hub.SendJSONToUsers([]uuid.UUID{uid}, frame)
++	}
++}
++
++func (s *Server) decodeFrame(client *ws.Client, env ws.Envelope, dst any) bool {
++	if len(env.Payload) == 0 {
++		s.frameError(client, env, "missing_payload", "this frame requires a payload")
++		return false
++	}
++	if err := json.Unmarshal(env.Payload, dst); err != nil {
++		s.frameError(client, env, "invalid_payload", "payload is not valid JSON for this type")
++		return false
++	}
++	return true
++}
++
++func (s *Server) frameError(client *ws.Client, env ws.Envelope, code, message string) {
++	s.sendRaw(client, ws.ErrorEnvelope(env.ID, code, message))
++}
+--- /tmp/base/Eren2932-Nu77a-f91a97c/server/internal/api/handlers_ws.go	2026-08-25 17:20:00.000000000 +0000
++++ server/internal/api/handlers_ws.go	2026-08-25 17:50:12.375497302 +0000
+@@ -107,13 +107,13 @@
+ 			s.sendRaw(client, ws.ErrorEnvelope("", "bad_frame", "frame is not a valid Nuva envelope"))
+ 			continue
+ 		}
+-		s.dispatch(client, env)
++		s.dispatch(ctx, client, env)
+ 	}
+ }
+ 
+ // dispatch handles one inbound frame. Sprint 0 knows ping and echo; sprint 2
+ // adds send_text, typing and read_up_to on top of the same switch.
+-func (s *Server) dispatch(client *ws.Client, env ws.Envelope) {
++func (s *Server) dispatch(ctx context.Context, client *ws.Client, env ws.Envelope) {
+ 	switch env.Type {
+ 	case ws.TypePing:
+ 		s.sendEnvelope(client, ws.TypePong, env.ID, map[string]any{
+@@ -127,6 +127,18 @@
+ 			Payload: env.Payload,
+ 		})
+ 
++	case ws.TypeSendText:
++		s.handleSendText(ctx, client, env)
++
++	case ws.TypeSendVoice:
++		s.handleSendVoice(ctx, client, env)
++
++	case ws.TypeReactionAdd:
++		s.handleReaction(ctx, client, env, true)
++
++	case ws.TypeReactionRemove:
++		s.handleReaction(ctx, client, env, false)
++
+ 	default:
+ 		s.sendRaw(client, ws.ErrorEnvelope(env.ID, "unknown_type",
+ 			"this message type is not supported by the server yet: "+env.Type))
+--- /tmp/base/Eren2932-Nu77a-f91a97c/server/internal/api/server.go	2026-08-25 17:20:00.000000000 +0000
++++ server/internal/api/server.go	2026-08-25 17:46:05.665028084 +0000
+@@ -77,6 +77,12 @@
+ 			r.Get("/me", s.handleGetMe)
+ 			r.Patch("/me", s.handlePatchMe)
+ 			r.Get("/users/{username}", s.handleGetUserByUsername)
++
++			// Media is authenticated on both sides: uploads cost disk, and a
++			// voice note is as private as the message that carries it.
++			r.Post("/media", s.handleUploadMedia)
++			r.Get("/media/{id}", s.handleGetMedia)
++
+ 			r.Get("/ws", s.handleWebSocket)
+ 		})
+ 	})
+--- /tmp/base/Eren2932-Nu77a-f91a97c/server/internal/api/respond.go	2026-08-25 17:20:00.000000000 +0000
++++ server/internal/api/respond.go	2026-08-25 17:46:05.709028525 +0000
+@@ -5,6 +5,8 @@
+ 	"io"
+ 	"log/slog"
+ 	"net/http"
++
++	"github.com/go-chi/chi/v5"
+ )
+ 
+ const maxJSONBody = 1 << 20 // 1 MiB is plenty for any JSON endpoint
+@@ -52,3 +54,9 @@
+ 	}
+ 	return true
+ }
++
++// chiURLParam exists so handlers do not each import chi just to read one path
++// segment. Keeping the import in one file makes the router easier to swap.
++func chiURLParam(r *http.Request, key string) string {
++	return chi.URLParam(r, key)
++}

@@ -71,3 +71,67 @@ data class ApiErrorDto(
     @Serializable
     data class Body(val code: String = "unknown", val message: String = "")
 }
+
+// ---------------------------------------------------------------------------
+// Media and reactions (4.0)
+// ---------------------------------------------------------------------------
+
+/** Reply from POST /v1/media. `url` is relative; prepend the server base. */
+@Serializable
+data class MediaDto(
+    val id: String,
+    val url: String,
+    val kind: String,
+    val mime: String,
+    val bytes: Long,
+    @SerialName("duration_ms") val durationMs: Int = 0,
+    val waveform: List<Int> = emptyList(),
+    /** True when the server already had these exact bytes. */
+    val reused: Boolean = false,
+)
+
+/** An attachment as embedded inside a message. */
+@Serializable
+data class AttachmentDto(
+    val id: String,
+    val kind: String,
+    val mime: String,
+    val bytes: Long,
+    @SerialName("duration_ms") val durationMs: Int = 0,
+    val waveform: List<Int> = emptyList(),
+)
+
+/**
+ * One collapsed reaction pill. `mine` is resolved per recipient by the server,
+ * so the client never has to scan the user list to know whether to highlight.
+ */
+@Serializable
+data class ReactionTallyDto(
+    val emoji: String,
+    val count: Int,
+    val mine: Boolean = false,
+    val users: List<String> = emptyList(),
+)
+
+/** Payload of a `reaction_relay` frame. Always the full tally, never a delta. */
+@Serializable
+data class ReactionRelayDto(
+    @SerialName("message_id") val messageId: String,
+    @SerialName("conversation_id") val conversationId: String,
+    val reactions: List<ReactionTallyDto> = emptyList(),
+)
+
+/** Payload of `send_voice`. The audio is uploaded over HTTP first. */
+@Serializable
+data class SendVoiceDto(
+    @SerialName("conversation_id") val conversationId: String,
+    @SerialName("client_id") val clientId: String,
+    @SerialName("attachment_id") val attachmentId: String,
+)
+
+/** Payload of `reaction_add` and `reaction_remove`. */
+@Serializable
+data class ReactionActionDto(
+    @SerialName("message_id") val messageId: String,
+    val emoji: String,
+)

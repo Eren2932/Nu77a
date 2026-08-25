@@ -51,9 +51,42 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
         val text: String,
         val sentAt: Long,
         val delivery: String,
+        // -- added in schema v2 ---------------------------------------------
+        /** "text" or "voice". Defaults keep every v1 call site compiling. */
+        val kind: String = KIND_TEXT,
+        /** Server attachment id, empty until the upload has been accepted. */
+        val attachmentId: String = "",
+        /** Voice length in ms. 0 for text. */
+        val durationMs: Int = 0,
+        /** Comma-separated 0..100 bars. Empty for text. */
+        val waveform: String = "",
+        /**
+         * Absolute path to the audio on this device. Set the moment recording
+         * stops, so a voice note is playable before it has been uploaded and
+         * still playable offline afterwards.
+         */
+        val localPath: String = "",
     )
 
+    /** One emoji left by one person on one message. */
+    data class ReactionRow(
+        val messageId: String,
+        val userId: String,
+        val emoji: String,
+        val reactedAt: Long,
+    )
+
+    /**
+     * A fresh install builds v1 and then runs every migration, exactly like an
+     * upgrading install does. This is the whole point: the two code paths
+     * cannot produce different schemas, because there is only one path.
+     */
     override fun onCreate(db: SQLiteDatabase) {
+        createV1(db)
+        migrate(db, from = 1, to = VERSION)
+    }
+
+    private fun createV1(db: SQLiteDatabase) {
         db.execSQL(
             """
             CREATE TABLE people (
@@ -92,12 +125,44 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
         db.execSQL("CREATE INDEX idx_messages_convo ON messages (conversation_id, sent_at)")
     }
 
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        migrate(db, from = oldVersion, to = newVersion)
+    }
+
     /**
-     * No upgrades yet. When the first one lands it goes here as an explicit
-     * `if (oldVersion < 2) { ... }` block. Dropping tables on upgrade would
-     * mean losing a user's history on an app update, which is unacceptable.
+     * Every migration is additive and runs inside a transaction. Nothing here
+     * drops a table or a column: losing a user's history on an app update is
+     * not a trade we make.
      */
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
+    private fun migrate(db: SQLiteDatabase, from: Int, to: Int) {
+        if (from >= to) return
+
+        db.beginTransaction()
+        try {
+            if (from < 2) {
+                db.execSQL("ALTER TABLE messages ADD COLUMN kind TEXT NOT NULL DEFAULT '$KIND_TEXT'")
+                db.execSQL("ALTER TABLE messages ADD COLUMN attachment_id TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE messages ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE messages ADD COLUMN waveform TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE messages ADD COLUMN local_path TEXT NOT NULL DEFAULT ''")
+                db.execSQL(
+                    """
+                    CREATE TABLE reactions (
+                        message_id TEXT NOT NULL,
+                        user_id TEXT NOT NULL,
+                        emoji TEXT NOT NULL,
+                        reacted_at INTEGER NOT NULL,
+                        PRIMARY KEY (message_id, user_id, emoji)
+                    )
+                    """.trimIndent(),
+                )
+                db.execSQL("CREATE INDEX idx_reactions_message ON reactions (message_id)")
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
 
     override fun onConfigure(db: SQLiteDatabase) {
         db.setForeignKeyConstraintsEnabled(false)
@@ -208,6 +273,11 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
                     text = c.str("text"),
                     sentAt = c.long("sent_at"),
                     delivery = c.str("delivery"),
+                    kind = c.str("kind"),
+                    attachmentId = c.str("attachment_id"),
+                    durationMs = c.int("duration_ms"),
+                    waveform = c.str("waveform"),
+                    localPath = c.str("local_path"),
                 )
             }
             out
@@ -222,6 +292,11 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
             put("text", row.text)
             put("sent_at", row.sentAt)
             put("delivery", row.delivery)
+            put("kind", row.kind)
+            put("attachment_id", row.attachmentId)
+            put("duration_ms", row.durationMs)
+            put("waveform", row.waveform)
+            put("local_path", row.localPath)
         }
         writableDatabase.insertWithOnConflict(
             "messages",
@@ -237,6 +312,64 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
         writableDatabase.update("messages", values, "id = ?", arrayOf(messageId))
     }
 
+    // -- reactions ----------------------------------------------------------
+
+    @Synchronized
+    fun reactions(): List<ReactionRow> = readableDatabase
+        .query("reactions", null, null, null, null, null, "reacted_at ASC")
+        .use { c ->
+            val out = ArrayList<ReactionRow>(c.count)
+            while (c.moveToNext()) {
+                out += ReactionRow(
+                    messageId = c.str("message_id"),
+                    userId = c.str("user_id"),
+                    emoji = c.str("emoji"),
+                    reactedAt = c.long("reacted_at"),
+                )
+            }
+            out
+        }
+
+    /** Idempotent: a double tap on a laggy connection must not be an error. */
+    @Synchronized
+    fun addReaction(row: ReactionRow) {
+        val values = ContentValues().apply {
+            put("message_id", row.messageId)
+            put("user_id", row.userId)
+            put("emoji", row.emoji)
+            put("reacted_at", row.reactedAt)
+        }
+        writableDatabase.insertWithOnConflict(
+            "reactions",
+            null,
+            values,
+            SQLiteDatabase.CONFLICT_REPLACE,
+        )
+    }
+
+    @Synchronized
+    fun removeReaction(messageId: String, userId: String, emoji: String) {
+        writableDatabase.delete(
+            "reactions",
+            "message_id = ? AND user_id = ? AND emoji = ?",
+            arrayOf(messageId, userId, emoji),
+        )
+    }
+
+    /**
+     * Called once the upload has been accepted: the row keeps its local audio
+     * path so playback keeps working, and gains the server id so other devices
+     * can fetch the same bytes.
+     */
+    @Synchronized
+    fun attachUpload(messageId: String, attachmentId: String, delivery: String) {
+        val values = ContentValues().apply {
+            put("attachment_id", attachmentId)
+            put("delivery", delivery)
+        }
+        writableDatabase.update("messages", values, "id = ?", arrayOf(messageId))
+    }
+
     private fun Cursor.str(column: String): String =
         getString(getColumnIndexOrThrow(column)) ?: ""
 
@@ -246,6 +379,9 @@ class ChatDatabase(context: Context) : SQLiteOpenHelper(
 
     companion object {
         private const val NAME = "nuva-chat.db"
-        private const val VERSION = 1
+        private const val VERSION = 2
+
+        const val KIND_TEXT = "text"
+        const val KIND_VOICE = "voice"
     }
 }

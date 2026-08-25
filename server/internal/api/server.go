@@ -77,6 +77,12 @@ func (s *Server) Router() http.Handler {
 			r.Get("/me", s.handleGetMe)
 			r.Patch("/me", s.handlePatchMe)
 			r.Get("/users/{username}", s.handleGetUserByUsername)
+
+			// Media is authenticated on both sides: uploads cost disk, and a
+			// voice note is as private as the message that carries it.
+			r.Post("/media", s.handleUploadMedia)
+			r.Get("/media/{id}", s.handleGetMedia)
+
 			r.Get("/ws", s.handleWebSocket)
 		})
 	})

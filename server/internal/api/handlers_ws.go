@@ -107,13 +107,13 @@ func (s *Server) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			s.sendRaw(client, ws.ErrorEnvelope("", "bad_frame", "frame is not a valid Nuva envelope"))
 			continue
 		}
-		s.dispatch(client, env)
+		s.dispatch(ctx, client, env)
 	}
 }
 
 // dispatch handles one inbound frame. Sprint 0 knows ping and echo; sprint 2
 // adds send_text, typing and read_up_to on top of the same switch.
-func (s *Server) dispatch(client *ws.Client, env ws.Envelope) {
+func (s *Server) dispatch(ctx context.Context, client *ws.Client, env ws.Envelope) {
 	switch env.Type {
 	case ws.TypePing:
 		s.sendEnvelope(client, ws.TypePong, env.ID, map[string]any{
@@ -126,6 +126,18 @@ func (s *Server) dispatch(client *ws.Client, env ws.Envelope) {
 			ID:      env.ID,
 			Payload: env.Payload,
 		})
+
+	case ws.TypeSendText:
+		s.handleSendText(ctx, client, env)
+
+	case ws.TypeSendVoice:
+		s.handleSendVoice(ctx, client, env)
+
+	case ws.TypeReactionAdd:
+		s.handleReaction(ctx, client, env, true)
+
+	case ws.TypeReactionRemove:
+		s.handleReaction(ctx, client, env, false)
 
 	default:
 		s.sendRaw(client, ws.ErrorEnvelope(env.ID, "unknown_type",

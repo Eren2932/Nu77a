@@ -5,6 +5,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const maxJSONBody = 1 << 20 // 1 MiB is plenty for any JSON endpoint
@@ -51,4 +53,10 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
 		return false
 	}
 	return true
+}
+
+// chiURLParam exists so handlers do not each import chi just to read one path
+// segment. Keeping the import in one file makes the router easier to swap.
+func chiURLParam(r *http.Request, key string) string {
+	return chi.URLParam(r, key)
 }
